@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academic Performance Dashboard — Trường THPT</title>
+<!-- Google Fonts Outfit -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- xlsx-js-style supports cell coloring & styling on download -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f3f2ef;
+    --border: rgba(0,0,0,0.06);
+    --border2: rgba(0,0,0,0.12);
+    --text: #1a1a1a;
+    --text2: #4a4a4a;
+    --text3: #7a7a7a;
+    --blue: #1d6fbf;
+    --blue-bg: #e8f1fb;
+    --green: #1a7a4a;
+    --green-bg: #e4f5ed;
+    --red: #c0392b;
+    --red-bg: #fdecea;
+    --amber: #b7770d;
+    --amber-bg: #fef3d8;
+    --purple: #6b3fa0;
+    --purple-bg: #f0e9f8;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Outfit', 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    scroll-behavior: smooth;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* ══ WORKSPACE SWITCHER ═══════════════════════════════ */
+  .ws-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem; display: flex; align-items: center; gap: 0; overflow-x: auto;
+  }
+  .ws-tab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 18px; height: 46px; font-size: 13px; font-weight: 500;
+    color: var(--text3); border: none; background: transparent; cursor: pointer;
+    border-bottom: 2.5px solid transparent; transition: all .15s; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ws-tab:hover { color: var(--text2); }
+  .ws-tab.ws-active { color: var(--text); border-bottom-color: var(--text); }
+  .ws-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: var(--border2); transition: background .15s;
+  }
+  .ws-tab.ws-active .ws-dot,
+  .ws-tab:hover .ws-dot { background: currentColor; }
+  .ws-dot.has-data { background: var(--green) !important; }
+  .ws-count { font-size: 10px; padding: 1px 6px; border-radius: 10px;
+    background: var(--surface2); color: var(--text3); margin-left: 2px; }
+  .ws-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+
+  /* Workspace badge in topbar */
+  .ws-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border2);
+  }
+  /* ══ END WORKSPACE CSS ══ */
+
+  /* ── UPLOAD SCREEN ── */
+  #upload-screen {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;
+    background: linear-gradient(135deg, #f8f7f4 0%, #e8f1fb 100%);
+  }
+  .upload-logo { font-size: 2.2rem; font-weight: 700; color: var(--blue); margin-bottom: 0.25rem; letter-spacing: -0.5px; }
+  .upload-tagline { font-size: 14px; color: var(--text2); margin-bottom: 2.5rem; }
+  .upload-box {
+    width: 100%; max-width: 520px; background: var(--surface); border-radius: 16px;
+    border: 2px dashed var(--border2); padding: 3.5rem 2.5rem; text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+    cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .upload-box:hover, .upload-box.drag {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+    box-shadow: 0 20px 25px -5px rgba(29, 111, 191, 0.1), 0 10px 10px -5px rgba(29, 111, 191, 0.04);
+    transform: scale(1.01);
+  }
+  .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .upload-title { font-size: 18px; font-weight: 600; margin-bottom: 0.5rem; }
+  .upload-hint { font-size: 13px; color: var(--text3); margin-bottom: 1.5rem; }
+  .upload-btn {
+    display: inline-block; background: var(--blue); color: white; padding: 10px 28px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s;
+  }
+  .upload-btn:hover { opacity: 0.88; }
+  #file-input { display: none; }
+  .upload-formats { margin-top: 1rem; font-size: 12px; color: var(--text3); }
+  .upload-template-bar { margin-top: 1.5rem; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .tpl-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s; text-decoration: none;
+  }
+  .tpl-btn-green  { background: #e4f5ed; color: #1a7a4a; border: 1px solid #a7f0c7; }
+  .tpl-btn-green:hover  { background: #bbf7d0; }
+  .tpl-btn-amber  { background: #fef3d8; color: #b7770d; border: 1px solid #fde68a; }
+  .tpl-btn-amber:hover  { background: #fde68a; }
+  .tpl-btn-blue   { background: #e8f1fb; color: #1d6fbf; border: 1px solid #bfdbfe; }
+  .tpl-btn-blue:hover   { background: #bfdbfe; }
+
+  /* ── TEMPLATE MODAL ── */
+  #tpl-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    align-items: center; justify-content: center; z-index: 9998; padding: 1rem;
+  }
+  #tpl-modal.open { display: flex; }
+  .tpl-modal-box {
+    background: var(--surface); border-radius: 14px; width: 100%; max-width: 560px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18); overflow: hidden;
+    animation: modalIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalIn { from { opacity:0; transform: translateY(24px) scale(0.97); } to { opacity:1; transform: none; } }
+  .tpl-modal-header {
+    background: linear-gradient(135deg,#1d6fbf,#2e86de);
+    color: white; padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tpl-modal-title { font-size: 16px; font-weight: 700; }
+  .tpl-modal-subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .tpl-modal-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .tpl-modal-close:hover { background: rgba(255,255,255,0.35); }
+  .tpl-modal-body { padding: 1.25rem 1.5rem; }
+  .tpl-type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+  .tpl-type-card {
+    border: 2px solid var(--border); border-radius: 10px; padding: 0.85rem 0.75rem;
+    cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .tpl-type-card:hover { border-color: var(--blue); background: var(--blue-bg); }
+  .tpl-type-card.selected { border-color: var(--blue); background: var(--blue-bg); }
+  .tpl-type-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .tpl-type-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .tpl-type-desc { font-size: 10px; color: var(--text3); line-height: 1.4; }
+  .tpl-section-title { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .tpl-config { margin-bottom: 1rem; }
+  .tpl-config label { font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px; }
+  .tpl-config input, .tpl-config select {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border2); border-radius: 6px;
+    font-size: 13px; color: var(--text); background: var(--surface);
+  }
+  .tpl-config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .tpl-subject-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+  .tpl-subject-chip {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--surface2); color: var(--text2);
+    transition: all 0.12s; user-select: none;
+  }
+  .tpl-subject-chip.on { background: var(--blue); color: white; border-color: var(--blue); }
+  .tpl-guide-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+    padding: 10px 14px; font-size: 12px; color: #065f46; margin-bottom: 1rem; line-height: 1.7;
+  }
+  .tpl-modal-footer { padding: 0 1.5rem 1.25rem; display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-download-tpl {
+    background: var(--blue); color: white; border: none; padding: 9px 22px;
+    border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-download-tpl:hover { opacity: 0.88; }
+  .btn-cancel-tpl {
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border2);
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  }
+  .upload-history { margin-top: 2rem; width: 100%; max-width: 520px; }
+  .history-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+  .history-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .history-item:hover { background: var(--blue-bg); }
+  .history-name { font-weight: 500; font-size: 13px; }
+  .history-meta { font-size: 11px; color: var(--text3); }
+  .history-load { font-size: 12px; color: var(--blue); font-weight: 500; }
+
+  /* ── HEADER BAR ── */
+  #app { display: none; min-height: 100vh; }
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem; display: flex; align-items: center; gap: 1rem; height: 52px; position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { font-weight: 700; font-size: 16px; color: var(--blue); flex-shrink: 0; }
+  .topbar-meta { font-size: 12px; color: var(--text3); flex: 1; }
+  .topbar-btn {
+    font-size: 12px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border2);
+    background: transparent; cursor: pointer; color: var(--text2); transition: all 0.15s;
+  }
+  .topbar-btn:hover { background: var(--surface2); }
+  .topbar-btn.primary { background: var(--blue); color: white; border-color: var(--blue); }
+  .topbar-btn.primary:hover { opacity: 0.88; }
+
+  /* ── TABS ── */
+  .tab-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem; display: flex; gap: 0; overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text3);
+    border: none; background: transparent; cursor: pointer; border-bottom: 2.5px solid transparent;
+    white-space: nowrap; transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab-btn:hover:not(.active) { color: var(--text2); }
+
+  /* ── CONTENT ── */
+  .content { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    border-left: 4px solid var(--border2);
+    transition: all 0.25s ease;
+  }
+  .kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+  }
+  .kpi-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .kpi-val { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .kpi.danger { border-left-color: var(--red); }
+  .kpi.danger .kpi-val { color: var(--red); }
+  .kpi.warn { border-left-color: var(--amber); }
+  .kpi.warn .kpi-val { color: var(--amber); }
+  .kpi.good { border-left-color: var(--green); }
+  .kpi.good .kpi-val { color: var(--green); }
+  .kpi.info { border-left-color: var(--blue); }
+  .kpi.info .kpi-val { color: var(--blue); }
+
+  /* ── ALERTS ── */
+  .alert-box { border-radius: var(--radius-sm); padding: 10px 14px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; font-size: 13px; }
+  .alert-red { background: var(--red-bg); border: 1px solid #f5c6c6; color: #7f1d1d; }
+  .alert-amber { background: var(--amber-bg); border: 1px solid #fde68a; color: #78350f; }
+  .alert-green { background: var(--green-bg); border: 1px solid #bbf7d0; color: #065f46; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+  /* ── GRID LAYOUT ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+  @media(max-width: 700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.85rem; }
+
+  /* ── SECTION TITLE ── */
+  .section-label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin: 1.25rem 0 0.6rem; }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .tbl-wrap.scrollable { max-height: 420px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: var(--surface2); padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text3); border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+
+  /* ── TAGS & BADGES ── */
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .tag-danger { background: var(--red-bg); color: var(--red); }
+  .tag-warn { background: var(--amber-bg); color: var(--amber); }
+  .tag-ok { background: #e8f5e9; color: #2e7d32; }
+  .tag-good { background: var(--blue-bg); color: var(--blue); }
+  .tag-excel { background: var(--purple-bg); color: var(--purple); }
+
+  /* ── RANK BAR ── */
+  .rank-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-n { width: 22px; font-size: 11px; color: var(--text3); font-weight: 600; }
+  .rank-name { flex: 1; font-size: 13px; }
+  .bar-wrap { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .rank-score { width: 40px; text-align: right; font-weight: 700; font-size: 13px; }
+
+  /* ── DIST BARS ── */
+  .dist-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dist-lbl { font-size: 12px; color: var(--text2); width: 64px; text-align: right; flex-shrink: 0; }
+  .dist-track { flex: 1; height: 22px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+  .dist-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; min-width: 2px; transition: width 0.6s ease; }
+  .dist-fill span { font-size: 11px; font-weight: 600; color: white; }
+  .dist-pct { width: 38px; font-size: 12px; color: var(--text3); text-align: right; flex-shrink: 0; }
+
+  /* ── HEATMAP ── */
+  .heatmap { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .heatmap th { padding: 6px 8px; background: var(--surface2); font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid var(--border); white-space: nowrap; }
+  .heatmap td { padding: 7px 10px; text-align: center; border: 1px solid var(--border); font-weight: 600; font-size: 12px; }
+
+  /* ── FORM CONTROLS ── */
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+  input[type=text], input[type=search], select {
+    padding: 7px 10px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    font-size: 13px; background: var(--surface); color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=search]:focus, select:focus { border-color: var(--blue); }
+  .search-input { width: 220px; }
+
+  /* ── PREDICT BARS ── */
+  .pred-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .pred-row:last-child { border-bottom: none; }
+  .pred-bar-wrap { width: 110px; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .pred-bar { height: 100%; border-radius: 3px; }
+
+  /* ── STUDENT ROWS ── */
+  .stu-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stu-row:last-child { border-bottom: none; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .stu-info { flex: 1; }
+  .stu-name { font-size: 13px; font-weight: 500; }
+  .stu-sub { font-size: 11px; color: var(--text3); }
+  .score-chip { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+  /* ── PANEL ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── TOOLTIP ── */
+  .tooltip-wrap { position: relative; display: inline-block; }
+  .tooltip-wrap:hover .tooltip { display: block; }
+  .tooltip { display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background: #222; color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; z-index: 999; }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar-wrap {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+    pointer-events: none; display: none;
+  }
+  #progress-bar {
+    height: 100%; background: linear-gradient(90deg,#1d6fbf,#60a5fa);
+    width: 0%; transition: width 0.2s ease; border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px rgba(29,111,191,0.5);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shimmer { 0%{background-position:-500px 0} 100%{background-position:500px 0} }
+  .skeleton {
+    background: linear-gradient(90deg,#e8e8e5 25%,#f2f1ed 50%,#e8e8e5 75%);
+    background-size: 500px 100%; animation: shimmer 1.1s infinite; border-radius: 6px;
+  }
+  .skel-kpi { height: 76px; }
+  .skel-chart { height: 210px; border-radius: 10px; }
+  .mini-spin {
+    display: inline-block; width: 14px; height: 14px; margin-right: 6px;
+    border: 2px solid rgba(29,111,191,0.25); border-top-color: var(--blue);
+    border-radius: 50%; animation: spin 0.55s linear infinite; vertical-align: middle;
+  }
+  #upload-status { margin-top: 10px; font-size: 13px; color: var(--blue); min-height: 20px; text-align: center; }
+
+  /* ── CHART CONTAINER ── */
+  .chart-box { position: relative; width: 100%; }
+
+
+  /* ══ TREND MODULE ══════════════════════════════════════ */
+  .session-shelf {
+    display: flex; gap: 8px; align-items: flex-start;
+    overflow-x: auto; padding-bottom: 4px; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .session-card {
+    flex-shrink: 0; min-width: 160px; max-width: 200px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: .75rem .875rem; position: relative; cursor: pointer;
+    transition: all .2s;
+  }
+  .session-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+  .session-card.active-session { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(29,111,191,.15); }
+  .session-card .sc-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .session-card .sc-meta { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .session-card .sc-avg  { font-size: 20px; font-weight: 700; color: var(--blue); }
+  .session-card .sc-sub  { font-size: 10px; color: var(--text3); }
+  .session-card .sc-del  { position: absolute; top: 6px; right: 8px; background: none; border: none;
+    color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+  .session-card .sc-del:hover { background: var(--red-bg); color: var(--red); }
+  .session-card .sc-trend { font-size: 11px; font-weight: 600; margin-top: 4px; }
+  .add-session-btn {
+    flex-shrink: 0; min-width: 130px; height: 116px;
+    border: 1.5px dashed var(--border2); border-radius: var(--radius);
+    background: transparent; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    color: var(--text3); font-size: 13px; transition: border-color .15s, color .15s;
+  }
+  .add-session-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .add-session-btn .asb-icon { font-size: 1.6rem; }
+
+  .trend-kpi-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 8px; margin-bottom: 1.25rem; }
+  .trend-kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .75rem .875rem;
+    border-left: 3px solid var(--border2);
+  }
+  .trend-kpi .tk-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+  .trend-kpi .tk-val { font-size: 20px; font-weight: 700; color: var(--text); }
+  .trend-kpi .tk-sub { font-size: 11px; margin-top: 2px; }
+  .trend-kpi.up { border-left-color: var(--green); }
+  .trend-kpi.up .tk-val { color: var(--green); }
+  .trend-kpi.down { border-left-color: var(--red); }
+  .trend-kpi.down .tk-val { color: var(--red); }
+  .trend-kpi.neutral { border-left-color: var(--amber); }
+  .trend-kpi.neutral .tk-val { color: var(--amber); }
+
+  .trend-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+  .trend-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+
+  /* Student selector for radar */
+  .stu-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: .75rem; }
+  .stu-chip { font-size: 12px; padding: 4px 10px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); transition: all .12s; }
+  .stu-chip.sel { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* Movement table */
+  .mov-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .mov-up   { background: var(--green-bg); color: var(--green); }
+  .mov-down { background: var(--red-bg);   color: var(--red);   }
+  .mov-same { background: var(--surface2); color: var(--text3); }
+
+  /* Upload mini in trend tab */
+  .trend-upload-area {
+    border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 1.5rem;
+    text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .trend-upload-area:hover { border-color: var(--blue); background: var(--blue-bg); }
+
+  /* Empty state */
+  .trend-empty { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+  .trend-empty .te-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  .trend-empty .te-title { font-size: 16px; color: var(--text2); font-weight: 500; margin-bottom: .375rem; }
+  .trend-empty .te-sub { font-size: 13px; line-height: 1.6; }
+
+  /* ══ END TREND MODULE ══ */
+
+  /* ── PRINT ── */
+  @media print {
+    .topbar, .tab-bar, .filter-row, .topbar-btn { display: none !important; }
+    .panel { display: block !important; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<script>
+// Ensure file input only activates after libs loaded
+window._libsReady = false;
+window.addEventListener('load', () => { window._libsReady = true; });
+</script>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     UPLOAD SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="upload-screen">
+  <div class="upload-logo">📊 AcademicDash</div>
+  <div class="upload-tagline">Dashboard phân tích điểm thi — Tái sử dụng mãi mãi</div>
+
+  <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()"
+       ondragover="event.preventDefault();this.classList.add('drag')"
+       ondragleave="this.classList.remove('drag')"
+       ondrop="handleDrop(event)">
+    <div class="upload-icon">📂</div>
+    <div class="upload-title">Kéo thả hoặc chọn file</div>
+    <div class="upload-hint">Tải lên file Excel bảng điểm thi để bắt đầu phân tích</div>
+    <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Chọn File Excel (.xlsx)</button>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+    <div class="upload-formats">Hỗ trợ: .xlsx · .xls · .csv — Mọi định dạng bảng điểm</div>
+    <div id="upload-status"></div>
+  </div>
+
+  <div class="upload-template-bar">
+    <button class="tpl-btn tpl-btn-green" onclick="openTemplateModal('single')">📥 Tải file mẫu nhập liệu</button>
+    <button class="tpl-btn tpl-btn-amber" onclick="openTemplateModal('multi')">📊 Mẫu nhiều môn học</button>
+    <button class="tpl-btn tpl-btn-blue" onclick="openTemplateModal('guide')">📖 Hướng dẫn nhập liệu</button>
+  </div>
+
+  <div class="upload-history" id="upload-history" style="display:none;">
+    <div class="history-title">📋 Đã tải gần đây</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TEMPLATE MODAL
+════════════════════════════════════════════════════════════ -->
+<div id="tpl-modal" onclick="if(event.target===this)closeTemplateModal()">
+  <div class="tpl-modal-box">
+    <div class="tpl-modal-header">
+      <div>
+        <div class="tpl-modal-title">📥 Xuất File Mẫu Nhập Liệu</div>
+        <div class="tpl-modal-subtitle">Chọn loại mẫu phù hợp — tải về — nhập dữ liệu — upload lên dashboard</div>
+      </div>
+      <button class="tpl-modal-close" onclick="closeTemplateModal()">✕</button>
+    </div>
+    <div class="tpl-modal-body">
+
+      <!-- STEP 1: Chọn loại mẫu -->
+      <div class="tpl-section-title">Bước 1 — Chọn loại file mẫu</div>
+      <div class="tpl-type-grid">
+        <div class="tpl-type-card selected" id="tpl-card-single" onclick="selectTplType('single')">
+          <div class="tpl-type-icon">📝</div>
+          <div class="tpl-type-name">1 Môn học</div>
+          <div class="tpl-type-desc">Điểm thi 1 môn duy nhất theo lớp</div>
+        </div>
+        <div class="tpl-type-card" id="tpl-card-multi" onclick="selectTplType('multi')">
+          <div class="tpl-type-icon">📊</div>
+          <div class="tpl-type-name">Nhiều môn</div>
+          <div class="tpl-type-desc">Bảng điểm tổng hợp tất cả các môn</div>
+        </div>
+        <div class="tpl-type-card" id="tpl-card-guide" onclick="selectTplType('guide')">
+          <div class="tpl-type-icon">📖</div>
+          <div class="tpl-type-name">Mẫu đầy đủ</div>
+          <div class="tpl-type-desc">Có sheet hướng dẫn + ví dụ chi tiết</div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Cấu hình -->
+      <div id="tpl-config-single">
+        <div class="tpl-section-title">Bước 2 — Cấu hình mẫu</div>
+        <div class="tpl-config-row">
+          <div class="tpl-config">
+            <label>Tên môn học</label>
+            <input type="text" id="tpl-subject-name" value="Vật Lý" placeholder="Vật Lý, Toán, Hóa...">
+          </div>
+          <div class="tpl-config">
+            <label>Tên lần thi / kỳ thi</label>
+            <input type="text" id="tpl-exam-name" value="Lần 1 - HK1" placeholder="Lần 1, Giữa kỳ...">
+          </div>
+        </div>
+        <div class="tpl-config-row">
+          <div class="tpl-config">
+            <label>Năm học</label>
+            <input type="text" id="tpl-school-year" value="2025-2026" placeholder="2025-2026">
+          </div>
+          <div class="tpl-config">
+            <label>Số học sinh mẫu</label>
+            <select id="tpl-sample-count">
+              <option value="5">5 dòng mẫu</option>
+              <option value="10" selected>10 dòng mẫu</option>
+              <option value="20">20 dòng mẫu</option>
+              <option value="0">Chỉ tiêu đề (rỗng)</option>
+            </select>
+          </div>
+        </div>
+        <div class="tpl-config">
+          <label>Danh sách lớp (phân cách bằng dấu phẩy)</label>
+          <input type="text" id="tpl-classes" value="12C01, 12C02, 12C03, 12C04, 12C05" placeholder="12A1, 12A2, 11B1...">
+        </div>
+      </div>
+
+      <div id="tpl-config-multi" style="display:none;">
+        <div class="tpl-section-title">Bước 2 — Chọn các môn học</div>
+        <div class="tpl-subject-grid" id="tpl-subject-chips"></div>
+        <div class="tpl-config-row">
+          <div class="tpl-config">
+            <label>Năm học</label>
+            <input type="text" id="tpl-school-year-multi" value="2025-2026">
+          </div>
+          <div class="tpl-config">
+            <label>Số học sinh mẫu</label>
+            <select id="tpl-sample-count-multi">
+              <option value="5">5 dòng mẫu</option>
+              <option value="10" selected>10 dòng mẫu</option>
+              <option value="0">Chỉ tiêu đề (rỗng)</option>
+            </select>
+          </div>
+        </div>
+        <div class="tpl-config">
+          <label>Danh sách lớp</label>
+          <input type="text" id="tpl-classes-multi" value="12C01, 12C02, 12C03">
+        </div>
+      </div>
+
+      <div id="tpl-config-guide" style="display:none;">
+        <div class="tpl-section-title">Bước 2 — Cấu hình mẫu đầy đủ</div>
+        <div class="tpl-config-row">
+          <div class="tpl-config">
+            <label>Tên trường</label>
+            <input type="text" id="tpl-school-name" value="THPT ..." placeholder="Tên trường của bạn">
+          </div>
+          <div class="tpl-config">
+            <label>Năm học</label>
+            <input type="text" id="tpl-school-year-guide" value="2025-2026">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Hướng dẫn sử dụng -->
+      <div class="tpl-guide-box">
+        <strong>📋 Quy trình 3 bước:</strong><br>
+        <strong>1.</strong> Tải file mẫu → mở bằng Excel hoặc Google Sheets<br>
+        <strong>2.</strong> Nhập đầy đủ dữ liệu vào các cột <em>Họ và tên</em>, <em>Ngày sinh</em>, <em>Lớp</em>, <em>Điểm</em> (cột màu vàng)<br>
+        <strong>3.</strong> Lưu file → kéo thả hoặc bấm "Chọn File" để upload lên Dashboard
+      </div>
+
+    </div>
+    <div class="tpl-modal-footer">
+      <button class="btn-cancel-tpl" onclick="closeTemplateModal()">Hủy</button>
+      <button class="btn-download-tpl" onclick="downloadTemplate()">⬇ Tải file mẫu xuống</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">📊 AcademicDash</div>
+    <div class="topbar-meta" id="topbar-meta">—</div>
+    <span class="ws-badge" id="ws-badge">Khối 10</span>
+    <button class="topbar-btn" onclick="exportCSV()">⬇ Xuất CSV</button>
+    <button class="topbar-btn" onclick="exportIntervention()">🚨 DS Can thiệp</button>
+    <button class="topbar-btn" onclick="openTemplateModal('single')" style="color:#1a7a4a;border-color:#a7f0c7;background:#e4f5ed;">📥 File mẫu</button>
+    <button class="topbar-btn" onclick="viewAllSchool()" style="color:#6b3fa0;border-color:#c5a8e8;background:#f0e9f8;" title="Xem tổng hợp toàn trường">🏫 Toàn trường</button>
+    <button class="topbar-btn primary" onclick="resetToUpload()">📂 Tải file mới</button>
+  </div>
+
+  <!-- WORKSPACE BAR -->
+  <div class="ws-bar" id="ws-bar">
+    <button class="ws-tab ws-active" data-ws="10" onclick="switchWorkspace('10',this)">
+      <span class="ws-dot" id="wsdot-10"></span>Khối 10
+      <span class="ws-count" id="wscount-10">0</span>
+    </button>
+    <div class="ws-divider"></div>
+    <button class="ws-tab" data-ws="11" onclick="switchWorkspace('11',this)">
+      <span class="ws-dot" id="wsdot-11"></span>Khối 11
+      <span class="ws-count" id="wscount-11">0</span>
+    </button>
+    <div class="ws-divider"></div>
+    <button class="ws-tab" data-ws="12" onclick="switchWorkspace('12',this)">
+      <span class="ws-dot" id="wsdot-12"></span>Khối 12
+      <span class="ws-count" id="wscount-12">0</span>
+    </button>
+    <div class="ws-divider"></div>
+    <button class="ws-tab" data-ws="all" onclick="switchWorkspace('all',this)" style="color:var(--blue)">
+      <span class="ws-dot" id="wsdot-all" style="background:var(--blue)"></span>Toàn trường
+      <span class="ws-count" id="wscount-all">0</span>
+    </button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">📈 Tổng quan</button>
+    <button class="tab-btn" onclick="switchTab('classes',this)">🏫 Theo lớp</button>
+    <button class="tab-btn" onclick="switchTab('students',this)">👤 Học sinh</button>
+    <button class="tab-btn" onclick="switchTab('predict',this)">🎯 Dự báo</button>
+    <button class="tab-btn" onclick="switchTab('rawdata',this)">📋 Dữ liệu</button>
+    <button class="tab-btn" onclick="switchTab('trend',this)">📉 Xu thế</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB: OVERVIEW -->
+    <div id="panel-overview" class="panel active">
+      <div class="kpi-row" id="kpi-overview"></div>
+      <div id="alert-section"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Phân bố điểm số</div>
+          <div id="dist-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Biểu đồ phân bố</div>
+          <div class="chart-box" style="height:210px;"><canvas id="distChart"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Xếp hạng lớp theo điểm TB</div>
+          <div id="class-rank"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Tỷ lệ đạt/không đạt theo lớp</div>
+          <div class="chart-box" style="height:210px;"><canvas id="passChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CLASSES -->
+    <div id="panel-classes" class="panel">
+      <div class="card">
+        <div class="card-title">Heatmap kết quả theo lớp</div>
+        <div style="overflow-x:auto;"><table class="heatmap" id="heatmap-tbl"></table></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Điểm trung bình theo lớp</div>
+          <div class="chart-box" style="height:240px;"><canvas id="classAvgChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Số học sinh có nguy cơ theo lớp</div>
+          <div class="chart-box" style="height:240px;"><canvas id="classRiskChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Chi tiết từng lớp</div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Lớp</th><th>Sĩ số</th><th>Điểm TB</th><th>Cao nhất</th><th>Thấp nhất</th><th>Tỷ lệ đạt</th><th>Giỏi</th><th>Khá</th><th>TB</th><th>Yếu</th><th>Nguy cơ</th></tr></thead>
+          <tbody id="class-detail-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- TAB: STUDENTS -->
+    <div id="panel-students" class="panel">
+      <div class="filter-row">
+        <input type="search" class="search-input" id="stu-search" placeholder="🔍 Tìm học sinh..." oninput="filterStudents()">
+        <select id="stu-cls" onchange="filterStudents()"><option value="">Tất cả lớp</option></select>
+        <select id="stu-level" onchange="filterStudents()">
+          <option value="">Tất cả học lực</option>
+          <option value="danger">Nguy cơ rớt TN (&lt;3.5)</option>
+          <option value="warn">Dưới TB (3.5–5)</option>
+          <option value="ok">Trung bình (5–6.5)</option>
+          <option value="good">Khá (6.5–8)</option>
+          <option value="excel">Giỏi (≥8)</option>
+        </select>
+        <span id="stu-count" style="font-size:12px;color:#888;margin-left:auto;"></span>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">🏆 Top 10 xuất sắc nhất</div>
+          <div id="top-excel-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ Top 10 cần hỗ trợ nhất</div>
+          <div id="top-weak-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Danh sách học sinh</div>
+        <div class="tbl-wrap scrollable"><table>
+          <thead><tr><th>#</th><th>STT</th><th>Họ và tên</th><th>Lớp</th><th>Điểm</th><th>Xếp loại</th><th>Cảnh báo</th></tr></thead>
+          <tbody id="stu-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- TAB: PREDICT -->
+    <div id="panel-predict" class="panel">
+      <div class="kpi-row" id="kpi-predict"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dự báo xác suất đạt tốt nghiệp (bottom 20)</div>
+          <div id="pred-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Biểu đồ nguy cơ theo lớp</div>
+          <div class="chart-box" style="height:240px;"><canvas id="riskChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🚨 Danh sách can thiệp khẩn — học sinh dưới 5.0</div>
+        <div class="tbl-wrap scrollable"><table>
+          <thead><tr><th>#</th><th>Họ và tên</th><th>Lớp</th><th>Điểm</th><th>Xác suất đạt TN</th><th>Mức độ ưu tiên</th></tr></thead>
+          <tbody id="intervention-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- TAB: RAW DATA -->
+    <div id="panel-rawdata" class="panel">
+      <div class="filter-row">
+        <input type="search" class="search-input" id="raw-search" placeholder="🔍 Tìm học sinh..." oninput="filterRaw()">
+        <select id="raw-cls" onchange="filterRaw()"><option value="">Tất cả lớp</option></select>
+        <span id="raw-count" style="font-size:12px;color:#888;margin-left:auto;"></span>
+        <button class="topbar-btn" onclick="exportCSV()">⬇ Xuất CSV</button>
+      </div>
+      <div class="tbl-wrap scrollable"><table>
+        <thead><tr><th>STT</th><th>Họ và tên</th><th>Ngày sinh</th><th>Lớp</th><th>Điểm</th><th>Xếp loại</th><th>Cảnh báo</th></tr></thead>
+        <tbody id="raw-tbody"></tbody>
+      </table></div>
+    </div>
+
+
+    <!-- TAB: XU THẾ / TREND ANALYSIS -->
+    <div id="panel-trend" class="panel">
+
+      <!-- Session shelf -->
+      <div class="section-label">Các lần thi đã tải lên</div>
+      <div class="session-shelf" id="session-shelf">
+        <!-- cards injected by JS -->
+        <button class="add-session-btn" onclick="document.getElementById('trend-file-input').click()" id="add-session-btn">
+          <span class="asb-icon">＋</span>
+          <span>Thêm lần thi</span>
+        </button>
+        <input type="file" id="trend-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="trendFileSelect(event)">
+      </div>
+      <div id="trend-upload-hint" style="font-size:12px;color:var(--text3);margin-bottom:1rem;">
+        Tải lên từ 2 lần thi trở lên để bật phân tích xu thế. Lần thi hiện tại được tự động thêm vào.
+      </div>
+
+      <!-- Empty / content switchable -->
+      <div id="trend-empty" class="trend-empty" style="display:none">
+        <div class="te-icon">📉</div>
+        <div class="te-title">Cần ít nhất 2 lần thi</div>
+        <div class="te-sub">Tải thêm file Excel kỳ thi trước để so sánh xu thế điểm theo thời gian.<br>Hệ thống tự động ghép học sinh theo họ tên và lớp.</div>
+      </div>
+
+      <div id="trend-content" style="display:none">
+
+        <!-- KPI -->
+        <div class="section-label">So sánh tổng quan</div>
+        <div class="trend-kpi-row" id="trend-kpi"></div>
+
+        <!-- Main trend chart -->
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">Xu thế điểm trung bình toàn trường qua các lần thi</div>
+          <div style="position:relative;height:260px;"><canvas id="trendMainChart"></canvas></div>
+        </div>
+
+        <!-- Per-class trends + subject trends -->
+        <div class="trend-grid2">
+          <div class="card">
+            <div class="card-title">Xu thế điểm TB theo lớp</div>
+            <div style="position:relative;height:240px;"><canvas id="trendClassChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">So sánh tỷ lệ đạt (≥5) theo lần thi</div>
+            <div style="position:relative;height:240px;"><canvas id="trendPassChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Distribution shift -->
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">Phổ điểm dịch chuyển qua các kỳ</div>
+          <div style="position:relative;height:200px;"><canvas id="trendDistChart"></canvas></div>
+        </div>
+
+        <!-- Student movement -->
+        <div class="trend-grid2">
+          <div class="card">
+            <div class="card-title">🚀 Tiến bộ nhiều nhất (so với kỳ liền trước)</div>
+            <div class="tbl-wrap scrollable" style="max-height:240px;">
+              <table><thead><tr><th>#</th><th>Học sinh</th><th>Lớp</th><th>Trước</th><th>Sau</th><th>Thay đổi</th></tr></thead>
+              <tbody id="top-improve"></tbody></table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚠️ Sa sút nhiều nhất (so với kỳ liền trước)</div>
+            <div class="tbl-wrap scrollable" style="max-height:240px;">
+              <table><thead><tr><th>#</th><th>Học sinh</th><th>Lớp</th><th>Trước</th><th>Sau</th><th>Thay đổi</th></tr></thead>
+              <tbody id="top-decline"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Radar: individual student tracker -->
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">Theo dõi cá nhân học sinh qua các kỳ</div>
+          <div class="filter-row">
+            <input type="search" id="stu-tracker-search" class="search-input" placeholder="🔍 Tìm học sinh..." oninput="searchStudentTracker()">
+            <div class="stu-picker" id="stu-picker" style="flex:1"></div>
+          </div>
+          <div style="position:relative;height:260px;"><canvas id="trendStuChart"></canvas></div>
+        </div>
+
+        <!-- Full movement table -->
+        <div class="card">
+          <div class="card-title">Bảng biến động toàn bộ học sinh</div>
+          <div class="filter-row">
+            <input type="search" id="mov-search" class="search-input" placeholder="🔍 Tìm học sinh..." oninput="filterMovTable()">
+            <select id="mov-cls" onchange="filterMovTable()"><option value="">Tất cả lớp</option></select>
+            <select id="mov-dir" onchange="filterMovTable()">
+              <option value="">Tất cả</option>
+              <option value="up">Tiến bộ ↑</option>
+              <option value="down">Sa sút ↓</option>
+              <option value="same">Ổn định →</option>
+            </select>
+            <span id="mov-count" style="font-size:12px;color:var(--text3);margin-left:auto;"></span>
+          </div>
+          <div class="tbl-wrap scrollable">
+            <table><thead id="mov-thead"></thead><tbody id="mov-tbody"></tbody></table>
+          </div>
+        </div>
+
+      </div><!-- /trend-content -->
+    </div><!-- /panel-trend -->
+
+    </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+// ─── STATE ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// MULTI-WORKSPACE STATE
+// Mỗi workspace là 1 khối độc lập (10 / 11 / 12 / all)
+// ══════════════════════════════════════════════════════════
+const WS_IDS = ['10','11','12','all'];
+const WS_LABELS = { '10':'Khối 10', '11':'Khối 11', '12':'Khối 12', 'all':'Toàn trường' };
+const WS_COLORS = { '10':'#1d6fbf', '11':'#1a7a4a', '12':'#c0392b', 'all':'#6b3fa0' };
+
+// Per-workspace state factory
+function makeWsState() {
+  return {
+    STUDENTS: [], FILE_META: {}, activeStudents: [],
+    EXAM_SESSIONS: [], TREND_SELECTED_STU: [], movTableData: []
+  };
+}
+const WS = { '10': makeWsState(), '11': makeWsState(), '12': makeWsState(), 'all': makeWsState() };
+
+let ACTIVE_WS = '10';   // currently visible workspace
+let charts = {};        // chart instances (keyed by canvas id, destroyed on switch)
+
+// Proxy getters — all existing code uses these as before
+function getWs() { return WS[ACTIVE_WS]; }
+// Shims for legacy code compatibility
+Object.defineProperty(window,'STUDENTS',       { get:()=>getWs().STUDENTS,       set:v=>{ getWs().STUDENTS=v; }});
+Object.defineProperty(window,'FILE_META',      { get:()=>getWs().FILE_META,      set:v=>{ getWs().FILE_META=v; }});
+Object.defineProperty(window,'activeStudents', { get:()=>getWs().activeStudents, set:v=>{ getWs().activeStudents=v; }});
+Object.defineProperty(window,'EXAM_SESSIONS',  { get:()=>getWs().EXAM_SESSIONS,  set:v=>{ getWs().EXAM_SESSIONS=v; }});
+Object.defineProperty(window,'TREND_SELECTED_STU',{ get:()=>getWs().TREND_SELECTED_STU, set:v=>{ getWs().TREND_SELECTED_STU=v; }});
+Object.defineProperty(window,'movTableData',   { get:()=>getWs().movTableData,   set:v=>{ getWs().movTableData=v; }});
+
+// ─── UPLOAD HANDLING ─────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+// ─── PROGRESS BAR ────────────────────────────────────────
+let _pTimer = null;
+function showLoading(msg, pct) {
+  const wrap = document.getElementById('progress-bar-wrap');
+  const bar  = document.getElementById('progress-bar');
+  const status = document.getElementById('upload-status');
+  wrap.style.display = 'block';
+  if (pct !== undefined) bar.style.width = pct + '%';
+  if (status) status.innerHTML = msg ? '<span class="mini-spin"></span>' + msg : '';
+}
+function setProgress(pct) {
+  const bar = document.getElementById('progress-bar');
+  if (bar) bar.style.width = Math.min(pct, 98) + '%';
+}
+function hideLoading() {
+  const bar  = document.getElementById('progress-bar');
+  const wrap = document.getElementById('progress-bar-wrap');
+  const status = document.getElementById('upload-status');
+  if (bar) { bar.style.width = '100%'; }
+  setTimeout(() => {
+    if (wrap) wrap.style.display = 'none';
+    if (bar)  bar.style.width = '0%';
+    if (status) status.innerHTML = '';
+  }, 300);
+}
+
+function processFile(file) {
+  if (typeof XLSX === 'undefined' || typeof Chart === 'undefined') {
+    const status = document.getElementById('upload-status');
+    if (status) status.innerHTML = '<span class="mini-spin"></span>Đang tải thư viện, vui lòng thử lại...';
+    setTimeout(() => processFile(file), 400);
+    return;
+  }
+  showLoading('Đang đọc file...', 10);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    setProgress(35);
+    // Yield to browser so progress bar paints before heavy XLSX parse
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          setProgress(55);
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type:'array'});
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          setProgress(75);
+          const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null});
+          parseAndLoad(rows, file.name);
+        } catch(err) {
+          hideLoading();
+          alert('Lỗi đọc file: ' + err.message + '\nVui lòng kiểm tra định dạng file.');
+        }
+      });
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── SMART COLUMN DETECTOR (moved inside parseAndLoad) ──
+
+function parseAndLoad(rows, filename) {
+  setProgress(80);
+
+  // ── Bước 1: tìm hàng header ──────────────────────────────
+  // Header hợp lệ phải chứa ít nhất 3 ô không rỗng
+  // VÀ phải có cột tên học sinh (chuỗi dài) + cột điểm (số hoặc tên môn/DTB)
+  const SCORE_KEYS   = ['đtb','dtb','điểm tb','diem tb','điểm trung bình','diem trung binh',
+                        'tb','score','điểm','diem','mark','point','ket qua','kết quả'];
+  const MULTI_SCORE_KEYS = ['toán','toan','văn','van','anh','lý','ly','hóa','hoa',
+                             'sinh','sử','su','địa','dia','ktpl','gdcd','cn','tin'];
+  const NAME_KEYS    = ['họ tên','ho ten','họ và tên','ho va ten','name','tên','ten','hoten'];
+  const CLASS_KEYS   = ['lớp','lop','class','khối','khoi'];
+  const STT_KEYS     = ['stt','số thứ tự','so thu tu','#','no','tt'];
+  const DOB_KEYS     = ['ngày sinh','ngay sinh','dob','birth','sinh'];
+
+  function norm(v) { return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim(); }
+  function matchKey(cell, keys) { const n=norm(cell); return keys.some(k=>n.includes(k)); }
+
+  let headerRowIdx = -1, colMap = {};
+
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const nonNull = row.filter(c => c !== null && c !== undefined && String(c).trim() !== '' && String(c) !== 'NaN');
+    if (nonNull.length < 3) continue;
+
+    const map = {};
+    let scoreColsFound = [];
+
+    row.forEach((cell, j) => {
+      if (cell === null || cell === undefined || String(cell).trim() === '' || String(cell) === 'NaN') return;
+      if (map.name  === undefined && matchKey(cell, NAME_KEYS))  map.name  = j;
+      if (map.cls   === undefined && matchKey(cell, CLASS_KEYS)) map.cls   = j;
+      if (map.stt   === undefined && matchKey(cell, STT_KEYS))   map.stt   = j;
+      if (map.dob   === undefined && matchKey(cell, DOB_KEYS))   map.dob   = j;
+      // Score columns: could be ĐTB (preferred) or a subject name
+      if (matchKey(cell, SCORE_KEYS)) {
+        if (map.score === undefined) map.score = j; // first match = primary
+        scoreColsFound.push({col:j, label: String(cell)});
+      }
+      // Multi-subject columns
+      if (matchKey(cell, MULTI_SCORE_KEYS)) scoreColsFound.push({col:j, label: String(cell)});
+    });
+
+    if (map.name === undefined) continue; // must have a name column
+
+    // ĐTB/DTB gets highest priority — pick last matching SCORE_KEYS col (usually the rightmost ĐTB)
+    const dtbCols = scoreColsFound.filter(c => matchKey(c.label, SCORE_KEYS));
+    if (dtbCols.length > 0) {
+      // Prefer 'đtb' exact match, else last score col (rightmost = total average)
+      const exactDtb = dtbCols.filter(c => ['đtb','dtb','điểm tb','tb'].includes(norm(c.label)));
+      map.score = exactDtb.length > 0 ? exactDtb[exactDtb.length-1].col : dtbCols[dtbCols.length-1].col;
+    }
+
+    // Also collect subject columns for multi-subject files
+    map.subjects = scoreColsFound.filter(c => matchKey(c.label, MULTI_SCORE_KEYS));
+
+    if (map.name !== undefined && (map.score !== undefined || map.subjects.length > 0)) {
+      headerRowIdx = i;
+      colMap = map;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1) {
+    hideLoading();
+    alert('Không tìm được cấu trúc dữ liệu.\nFile cần có ít nhất cột "Họ và tên" + cột điểm.');
+    return;
+  }
+
+  // ── Bước 2: parse từng dòng dữ liệu ─────────────────────
+  const students = [];
+  const dataStart = headerRowIdx + 1;
+
+  // Helper: get best score for a row
+  function getScore(row) {
+    // 1. Dùng cột đã map (ĐTB / score)
+    if (colMap.score !== undefined) {
+      const v = row[colMap.score];
+      if (v !== null && v !== undefined && String(v) !== 'NaN') {
+        const f = parseFloat(v);
+        if (!isNaN(f) && f >= 0 && f <= 10) return f;
+      }
+    }
+    // 2. Fallback: tính TB từ các môn có điểm
+    if (colMap.subjects && colMap.subjects.length > 0) {
+      const vals = colMap.subjects
+        .map(s => parseFloat(row[s.col]))
+        .filter(f => !isNaN(f) && f >= 0 && f <= 10);
+      if (vals.length > 0) return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length * 100)/100;
+    }
+    // 3. Scan toàn bộ row tìm số hợp lệ 0–10 ở vị trí sau cột tên (bỏ qua các cột metadata đã biết và định dạng ngày)
+    const nameCol = colMap.name || 1;
+    for (let j = nameCol+1; j < row.length; j++) {
+      if (j === colMap.dob || j === colMap.cls || j === colMap.stt || j === colMap.name) continue;
+      const valStr = String(row[j] || '').trim();
+      if (valStr.includes('/') || valStr.includes('-') || valStr === '') continue;
+      const f = parseFloat(valStr);
+      if (!isNaN(f) && f >= 0 && f <= 10) return f;
+    }
+    return null;
+  }
+
+  for (let i = dataStart; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+
+    // Bỏ hàng rỗng hoặc hàng tổng kết (có chữ "tổng", "lớp:", "khối:", "NaN" quá nhiều)
+    const nonNullCells = row.filter(c => c !== null && c !== undefined && String(c).trim() !== '' && String(c) !== 'NaN');
+    if (nonNullCells.length < 2) continue;
+
+    // Bỏ hàng aggregate/summary
+    const rowStr = nonNullCells.map(c=>String(c).toLowerCase()).join(' ');
+    if (/tổng|trên 5|dưới 5|sĩ số|tỉ lệ|tren 5|duoi 5|si so|khối:|lớp:/.test(rowStr)) continue;
+
+    // Lấy tên
+    let name = '';
+    if (colMap.name !== undefined) name = String(row[colMap.name] || '').replace(/\t/g,'').trim();
+
+    // Bỏ nếu tên là số thuần, hoặc rỗng, hoặc là header lại
+    if (!name || !isNaN(parseFloat(name))) continue;
+    if (matchKey(name, NAME_KEYS)) continue; // header row sneaking in
+    if (name === 'NaN') continue;
+
+    const score = getScore(row);
+    if (score === null) continue;
+
+    let cls = colMap.cls !== undefined ? String(row[colMap.cls] || '').trim() : '';
+    let dob = colMap.dob !== undefined ? String(row[colMap.dob] || '').trim() : '';
+    let stt = colMap.stt !== undefined ? String(row[colMap.stt] || '').trim() : '';
+
+    // Làm sạch cls/dob nếu bị 'NaN' hoặc 'undefined' hoặc 'null'
+    if (cls === 'NaN' || cls === 'null' || cls === 'undefined') cls = '';
+    if (dob === 'NaN' || dob === 'null' || dob === 'undefined') dob = '';
+
+    // Trích lớp từ dòng nếu chưa có
+    if (!cls) {
+      for (const cell of row) {
+        if (!cell) continue;
+        const m = String(cell).match(/\b(1[0-2][A-Za-z]\d{1,2})\b/);
+        if (m) { cls = m[1]; break; }
+      }
+    }
+
+    // Lấy điểm từng môn nếu có (cho dashboard đa môn sau này)
+    const subjectScores = {};
+    if (colMap.subjects) {
+      colMap.subjects.forEach(s => {
+        const v = parseFloat(row[s.col]);
+        if (!isNaN(v)) subjectScores[s.label] = v;
+      });
+    }
+
+    students.push({
+      stt: stt || (students.length + 1),
+      name,
+      dob: dob || '',
+      cls: cls || 'Chưa rõ',
+      score: Math.round(score * 10000) / 10000,
+      subjects: subjectScores
+    });
+  }
+
+  if (students.length < 2) {
+    hideLoading();
+    alert(`Không tìm thấy dữ liệu hợp lệ (${students.length} học sinh).\n\nKiểm tra:\n• Cột "Họ và tên" và cột điểm (ĐTB/Điểm) phải có tên cột rõ ràng\n• Điểm từ 0–10`);
+    return;
+  }
+
+  setProgress(90);
+
+  // ── Tự động phát hiện và chuyển sang đúng workspace ──
+  const detectedWs = detectWorkspace(filename, students);
+  if (detectedWs !== ACTIVE_WS) {
+    // Switch workspace silently (không rebuild UI ngay)
+    ACTIVE_WS = detectedWs;
+    document.querySelectorAll('.ws-tab').forEach(b => {
+      b.classList.toggle('ws-active', b.dataset.ws === detectedWs);
+    });
+  }
+
+  STUDENTS = students;
+  FILE_META = {
+    filename,
+    count: students.length,
+    classes: [...new Set(students.map(s=>s.cls))].sort(),
+    loadedAt: new Date().toLocaleString('vi-VN'),
+    scoreCol: colMap.score,
+    subjects: (colMap.subjects||[]).map(s=>s.label)
+  };
+
+  // Save to localStorage
+  saveToHistory({ filename, count: students.length, meta: FILE_META, data: STUDENTS });
+
+  // ── Auto-add to Trend sessions (workspace hiện tại) ──
+  const sessionId = 'sess_' + Date.now();
+  const sessionLabel = autoSessionLabel(filename);
+  EXAM_SESSIONS = EXAM_SESSIONS.filter(s => s.filename !== filename);
+  EXAM_SESSIONS.push({
+    id: sessionId,
+    filename,
+    name: sessionLabel,
+    label: sessionLabel,
+    students: students,
+    meta: { count: students.length, classes: [...new Set(students.map(s=>s.cls))].sort(),
+            avg: students.reduce((a,b)=>a+b.score,0)/students.length }
+  });
+  renderSessionShelf();
+
+  // ── Cập nhật "Toàn trường" tự động nếu có ≥2 khối ──
+  const hasData = ['10','11','12'].filter(k => WS[k].STUDENTS.length > 0);
+  if (hasData.length >= 1) buildAllSchoolWorkspace();
+  updateWsBar();
+
+  // Show app shell instantly, build in next frame
+  document.getElementById('upload-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderSkeletons();
+  setProgress(93);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      buildDashboard();
+      hideLoading();
+    });
+  });
+}
+
+// ─── HISTORY (localStorage) ───────────────────────────────
+function saveToHistory(entry) {
+  try {
+    let hist = JSON.parse(localStorage.getItem('acadDashHistory') || '[]');
+    hist = hist.filter(h => h.filename !== entry.filename);
+    hist.unshift({ filename: entry.filename, count: entry.count, loadedAt: new Date().toISOString(), data: entry.data });
+    hist = hist.slice(0, 5); // keep last 5
+    localStorage.setItem('acadDashHistory', JSON.stringify(hist));
+  } catch(e) {}
+}
+
+function loadHistory() {
+  try {
+    const hist = JSON.parse(localStorage.getItem('acadDashHistory') || '[]');
+    if (hist.length === 0) return;
+    document.getElementById('upload-history').style.display = 'block';
+    document.getElementById('history-list').innerHTML = hist.map((h,i) => `
+      <div class="history-item" onclick="loadFromHistory(${i})">
+        <div><div class="history-name">📄 ${h.filename}</div>
+        <div class="history-meta">${h.count} học sinh · ${new Date(h.loadedAt).toLocaleString('vi-VN')}</div></div>
+        <div class="history-load">Tải lại →</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function loadFromHistory(idx) {
+  try {
+    const hist = JSON.parse(localStorage.getItem('acadDashHistory') || '[]');
+    const entry = hist[idx];
+    if (!entry) return;
+    showLoading('Đang tải dữ liệu...');
+    const detectedWsH = detectWorkspace(entry.filename, entry.data);
+    if (detectedWsH !== ACTIVE_WS) {
+      ACTIVE_WS = detectedWsH;
+      document.querySelectorAll('.ws-tab').forEach(b => {
+        b.classList.toggle('ws-active', b.dataset.ws === detectedWsH);
+      });
+    }
+    STUDENTS = entry.data;
+    FILE_META = { filename: entry.filename, count: entry.count, classes: [...new Set(entry.data.map(s=>s.cls))].sort(), loadedAt: new Date(entry.loadedAt).toLocaleString('vi-VN') };
+
+    // Auto-add to Trend sessions when loading from history
+    const sessionId = 'sess_' + Date.now();
+    const sessionLabel = autoSessionLabel(entry.filename);
+    EXAM_SESSIONS = EXAM_SESSIONS.filter(s => s.filename !== entry.filename);
+    EXAM_SESSIONS.push({
+      id: sessionId,
+      filename: entry.filename,
+      name: sessionLabel,
+      label: sessionLabel,
+      students: entry.data,
+      meta: { count: entry.count, classes: [...new Set(entry.data.map(s=>s.cls))].sort(),
+              avg: entry.data.reduce((a,b)=>a+b.score,0)/entry.data.length }
+    });
+    renderSessionShelf();
+
+    updateWsBar();
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    renderSkeletons();
+    setProgress(70);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        buildDashboard();
+        hideLoading();
+      });
+    });
+  } catch(e) { hideLoading(); alert('Không thể tải dữ liệu lịch sử.'); }
+}
+
+function resetToUpload() {
+  // Clear chỉ workspace đang active, không ảnh hưởng các khối khác
+  WS[ACTIVE_WS] = makeWsState();
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('upload-screen').style.display = 'flex';
+  document.getElementById('file-input').value = '';
+  // Reset tagline
+  const tagline = document.querySelector('.upload-tagline');
+  if (tagline) tagline.textContent =
+    ACTIVE_WS === 'all'
+      ? 'Toàn trường — tổng hợp cả 3 khối'
+      : `Đang nhập dữ liệu ${WS_LABELS[ACTIVE_WS]} — kéo thả file Excel vào đây`;
+  loadHistory();
+  switchTab('overview', document.querySelector('.tab-btn'));
+  updateWsBar();
+}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function getLevel(s) {
+  if (s >= 8)   return { label:'Giỏi',       key:'excel' };
+  if (s >= 6.5) return { label:'Khá',         key:'good'  };
+  if (s >= 5)   return { label:'Trung bình',  key:'ok'    };
+  if (s >= 3.5) return { label:'Dưới TB',     key:'warn'  };
+  return              { label:'Nguy cơ rớt', key:'danger' };
+}
+
+function tagHTML(key, label) {
+  return `<span class="tag tag-${key}">${label}</span>`;
+}
+
+function passProb(score) {
+  if (score >= 5)   return Math.min(99, Math.round(70 + (score-5)*11));
+  if (score >= 3.5) return Math.round(28 + (score-3.5)*28);
+  return Math.max(3, Math.round(score * 6));
+}
+
+function pct(n, total) { return total ? Math.round(n/total*100) : 0; }
+
+function avg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+
+const CLR = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4','#84CC16','#F97316','#6366F1','#14B8A6','#F43F5E'];
+
+// ─── SKELETON LOADER ─────────────────────────────────────
+function renderSkeletons() {
+  const sk = n => `<div class="skeleton skel-kpi"></div>`.repeat(n);
+  const skChart = `<div class="skeleton skel-chart"></div>`;
+  // KPI row instant skeleton
+  const kpiEl = document.getElementById('kpi-overview');
+  if (kpiEl) kpiEl.innerHTML = sk(8);
+  // Chart areas
+  ['distChart','passChart','classAvgChart','classRiskChart','riskChart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.parentElement) {
+      el.style.display = 'none';
+      const sk = document.createElement('div');
+      sk.className = 'skeleton skel-chart'; sk.dataset.skFor = id;
+      el.parentElement.appendChild(sk);
+    }
+  });
+}
+
+function clearSkeletons() {
+  document.querySelectorAll('[data-sk-for]').forEach(el => el.remove());
+  ['distChart','passChart','classAvgChart','classRiskChart','riskChart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+}
+
+// Lazy chart: only render charts when their tab is visible
+let chartsReady = { overview: false, classes: false, predict: false };
+
+// ─── BUILD DASHBOARD ─────────────────────────────────────
+function buildDashboard() {
+  const S = STUDENTS;
+  const total = S.length;
+  const classes = FILE_META.classes;
+
+  clearSkeletons();
+  document.getElementById('topbar-meta').textContent =
+    `${FILE_META.filename} · ${total} học sinh · ${classes.length} lớp · Tải lúc ${FILE_META.loadedAt}`;
+  updateWsBar();
+
+  // Compute stats
+  const scores = S.map(s=>s.score);
+  const meanScore = avg(scores);
+  const cDanger = S.filter(s=>s.score<3.5).length;
+  const cWarn   = S.filter(s=>s.score>=3.5&&s.score<5).length;
+  const cOk     = S.filter(s=>s.score>=5&&s.score<6.5).length;
+  const cGood   = S.filter(s=>s.score>=6.5&&s.score<8).length;
+  const cExcel  = S.filter(s=>s.score>=8).length;
+  const cPass   = S.filter(s=>s.score>=5).length;
+  const cLiet   = S.filter(s=>s.score<1).length;
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+
+  // Class stats
+  const classStats = classes.map(cls => {
+    const arr = S.filter(s=>s.cls===cls);
+    const sc = arr.map(s=>s.score);
+    return {
+      cls, count:arr.length, avg: avg(sc),
+      max: Math.max(...sc), min: Math.min(...sc),
+      pass: arr.filter(s=>s.score>=5).length,
+      excel: arr.filter(s=>s.score>=8).length,
+      good: arr.filter(s=>s.score>=6.5&&s.score<8).length,
+      ok: arr.filter(s=>s.score>=5&&s.score<6.5).length,
+      warn: arr.filter(s=>s.score>=3.5&&s.score<5).length,
+      danger: arr.filter(s=>s.score<3.5).length,
+    };
+  }).sort((a,b)=>b.avg-a.avg);
+
+  // ── KPI OVERVIEW ──────────────────────────────────────
+  document.getElementById('kpi-overview').innerHTML = `
+    <div class="kpi info"><div class="kpi-label">Tổng học sinh</div><div class="kpi-val">${total}</div><div class="kpi-sub">${classes.length} lớp</div></div>
+    <div class="kpi info"><div class="kpi-label">Điểm trung bình</div><div class="kpi-val">${meanScore.toFixed(2)}</div><div class="kpi-sub">Min ${minScore} · Max ${maxScore}</div></div>
+    <div class="kpi good"><div class="kpi-label">Tỷ lệ đạt (≥5)</div><div class="kpi-val">${pct(cPass,total)}%</div><div class="kpi-sub">${cPass} học sinh</div></div>
+    <div class="kpi good"><div class="kpi-label">Tỷ lệ Giỏi (≥8)</div><div class="kpi-val">${pct(cExcel,total)}%</div><div class="kpi-sub">${cExcel} HS</div></div>
+    <div class="kpi good"><div class="kpi-label">Tỷ lệ Khá</div><div class="kpi-val">${pct(cGood,total)}%</div><div class="kpi-sub">${cGood} HS (6.5–8)</div></div>
+    <div class="kpi warn"><div class="kpi-label">Dưới TB (3.5–5)</div><div class="kpi-val">${pct(cWarn,total)}%</div><div class="kpi-sub">${cWarn} HS</div></div>
+    <div class="kpi danger"><div class="kpi-label">Nguy cơ rớt TN</div><div class="kpi-val">${pct(cDanger,total)}%</div><div class="kpi-sub">${cDanger} HS dưới 3.5</div></div>
+    <div class="kpi ${cLiet>0?'danger':'good'}"><div class="kpi-label">Điểm liệt (&lt;1)</div><div class="kpi-val">${cLiet}</div><div class="kpi-sub">${cLiet>0?'Cần xử lý ngay':'Không có'}</div></div>
+  `;
+
+  // ── ALERTS ────────────────────────────────────────────
+  let alertHTML = '<div class="section-label">Cảnh báo tự động</div>';
+  if (cLiet > 0) alertHTML += `<div class="alert-box alert-red"><div class="alert-dot" style="background:#ef4444;"></div><strong>Điểm liệt:</strong> ${cLiet} học sinh có điểm dưới 1.0 — cần xử lý hành chính ngay.</div>`;
+  if (cDanger > 0) alertHTML += `<div class="alert-box alert-red"><div class="alert-dot" style="background:#ef4444;"></div><strong>Nguy cơ rớt tốt nghiệp:</strong> ${cDanger} học sinh điểm dưới 3.5. Cần lập kế hoạch bồi dưỡng khẩn.</div>`;
+  if (cWarn > 0) alertHTML += `<div class="alert-box alert-amber"><div class="alert-dot" style="background:#f59e0b;"></div><strong>Cần theo dõi:</strong> ${cWarn} học sinh điểm từ 3.5–5.0. Ưu tiên hỗ trợ bổ sung.</div>`;
+  if (pct(cPass,total) >= 90) alertHTML += `<div class="alert-box alert-green"><div class="alert-dot" style="background:#22c55e;"></div><strong>Kết quả tốt:</strong> Tỷ lệ đạt yêu cầu đạt ${pct(cPass,total)}% — vượt ngưỡng 90%.</div>`;
+  document.getElementById('alert-section').innerHTML = alertHTML;
+
+  // ── DIST BARS ─────────────────────────────────────────
+  const distBuckets = [
+    { label:'< 3.5', count:cDanger, color:'#ef4444' },
+    { label:'3.5 – 5', count:cWarn, color:'#f59e0b' },
+    { label:'5 – 6.5', count:cOk, color:'#6b7280' },
+    { label:'6.5 – 8', count:cGood, color:'#3b82f6' },
+    { label:'≥ 8', count:cExcel, color:'#8b5cf6' },
+  ];
+  const maxDist = Math.max(...distBuckets.map(d=>d.count), 1);
+  document.getElementById('dist-bars').innerHTML = distBuckets.map(d=>`
+    <div class="dist-row">
+      <div class="dist-lbl">${d.label}</div>
+      <div class="dist-track"><div class="dist-fill" style="width:${Math.round(d.count/maxDist*100)}%;background:${d.color};"><span>${d.count}</span></div></div>
+      <div class="dist-pct">${pct(d.count,total)}%</div>
+    </div>`).join('');
+
+  // ── CHARTS ────────────────────────────────────────────
+  function mkChart(id, cfg) {
+    if (charts[id]) { charts[id].destroy(); }
+    const el = document.getElementById(id);
+    if (!el) return;
+    charts[id] = new Chart(el, cfg);
+  }
+
+  mkChart('distChart', {
+    type:'bar',
+    data:{ labels: distBuckets.map(d=>d.label), datasets:[{ label:'Số HS', data: distBuckets.map(d=>d.count), backgroundColor: distBuckets.map(d=>d.color), borderRadius:5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{font:{size:11}}}}}
+  });
+
+  const sortedCS = [...classStats].sort((a,b)=>a.cls.localeCompare(b.cls));
+  mkChart('passChart', {
+    type:'bar',
+    data:{ labels: sortedCS.map(c=>c.cls), datasets:[
+      { label:'Đạt (%)', data: sortedCS.map(c=>pct(c.pass,c.count)), backgroundColor:'#3b82f6', borderRadius:3 },
+      { label:'Chưa đạt (%)', data: sortedCS.map(c=>pct(c.count-c.pass,c.count)), backgroundColor:'#fca5a5', borderRadius:3 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'x', plugins:{legend:{display:false}},
+      scales:{ x:{stacked:true, ticks:{font:{size:10}}}, y:{stacked:true, max:100, ticks:{callback:v=>v+'%'}} } }
+  });
+
+  // ── CLASS RANK ────────────────────────────────────────
+  const maxAvg = Math.max(...classStats.map(c=>c.avg),1);
+  document.getElementById('class-rank').innerHTML = classStats.map((c,i)=>`
+    <div class="rank-row">
+      <div class="rank-n">${i+1}</div>
+      <div class="rank-name">${c.cls} <span style="font-size:11px;color:#888;">(${c.count} HS)</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(c.avg/maxAvg*100)}%;background:${i<3?'#3b82f6':'#9ca3af'};"></div></div>
+      <div class="rank-score" style="color:${i<3?'#1d6fbf':'inherit'}">${c.avg.toFixed(2)}</div>
+    </div>`).join('');
+
+  // ── CLASS CHARTS ──────────────────────────────────────
+  mkChart('classAvgChart', {
+    type:'bar',
+    data:{ labels: classStats.map(c=>c.cls), datasets:[{ label:'Điểm TB', data: classStats.map(c=>parseFloat(c.avg.toFixed(2))), backgroundColor: classStats.map((_,i)=>CLR[i%CLR.length]), borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ y:{ min: Math.max(0, Math.floor(Math.min(...classStats.map(c=>c.avg))-0.5)), ticks:{font:{size:11}}} } }
+  });
+
+  mkChart('classRiskChart', {
+    type:'bar',
+    data:{ labels: classStats.map(c=>c.cls), datasets:[
+      { label:'Nguy cơ rớt TN', data: classStats.map(c=>c.danger), backgroundColor:'#ef4444', borderRadius:3 },
+      { label:'Cần theo dõi', data: classStats.map(c=>c.warn), backgroundColor:'#fcd34d', borderRadius:3 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{stacked:true, ticks:{font:{size:10}}}, y:{stacked:true, beginAtZero:true} } }
+  });
+
+  // ── CLASS DETAIL TABLE ────────────────────────────────
+  document.getElementById('class-detail-tbody').innerHTML = classStats.map(c=>`
+    <tr>
+      <td><strong>${c.cls}</strong></td>
+      <td>${c.count}</td>
+      <td><strong>${c.avg.toFixed(2)}</strong></td>
+      <td>${c.max}</td>
+      <td>${c.min}</td>
+      <td><strong>${pct(c.pass,c.count)}%</strong> (${c.pass})</td>
+      <td>${c.excel}</td><td>${c.good}</td><td>${c.ok}</td><td>${c.warn}</td>
+      <td style="color:${c.danger>0?'#c0392b':'inherit'};font-weight:${c.danger>0?600:400};">${c.danger}</td>
+    </tr>`).join('');
+
+  // ── HEATMAP ───────────────────────────────────────────
+  const hmRows = [
+    { label:'Sĩ số', fn:c=>c.count, good:false },
+    { label:'Điểm TB', fn:c=>c.avg.toFixed(2), good:true, num:c=>c.avg },
+    { label:'Tỷ lệ đạt', fn:c=>pct(c.pass,c.count)+'%', good:true, num:c=>c.pass/c.count },
+    { label:'Giỏi', fn:c=>c.excel, good:true, num:c=>c.excel },
+    { label:'Nguy cơ', fn:c=>c.danger, good:false, num:c=>c.danger },
+  ];
+  function hmBg(val, min, max, good) {
+    if (max===min) return 'transparent';
+    const r = (val-min)/(max-min);
+    if (good) return `rgba(59,130,246,${0.12+r*0.45})`;
+    return val===0 ? 'transparent' : `rgba(239,68,68,${0.12+r*0.45})`;
+  }
+  const tbl = document.getElementById('heatmap-tbl');
+  tbl.innerHTML = `<tr><th>Chỉ số</th>${classStats.map(c=>`<th>${c.cls}</th>`).join('')}</tr>` +
+    hmRows.map(row => {
+      const nums = row.num ? classStats.map(c=>row.num(c)) : null;
+      const min = nums ? Math.min(...nums) : 0, max = nums ? Math.max(...nums) : 0;
+      return `<tr><td style="font-weight:600;font-size:11px;color:#888;background:#f8f7f4;padding:6px 10px;">${row.label}</td>` +
+        classStats.map((c,i)=>{
+          const bg = nums ? hmBg(nums[i], min, max, row.good) : 'transparent';
+          return `<td style="background:${bg};">${row.fn(c)}</td>`;
+        }).join('') + '</tr>';
+    }).join('');
+
+  // ── STUDENTS TAB ──────────────────────────────────────
+  populateSelect('stu-cls', classes);
+  populateSelect('raw-cls', classes);
+  activeStudents = [...S];
+  renderStudentTable();
+
+  const topExcel = [...S].sort((a,b)=>b.score-a.score).slice(0,10);
+  const topWeak  = [...S].sort((a,b)=>a.score-b.score).slice(0,10);
+
+  document.getElementById('top-excel-list').innerHTML = topExcel.map((s,i)=>`
+    <div class="stu-row">
+      <div class="avatar" style="background:${CLR[i%CLR.length]}22;color:${CLR[i%CLR.length]};">${i+1}</div>
+      <div class="stu-info"><div class="stu-name">${s.name}</div><div class="stu-sub">${s.cls}</div></div>
+      <span class="score-chip" style="background:#ede9fe;color:#6b3fa0;">${s.score}</span>
+    </div>`).join('');
+
+  document.getElementById('top-weak-list').innerHTML = topWeak.map((s,i)=>`
+    <div class="stu-row">
+      <div class="avatar" style="background:#fee2e2;color:#ef4444;">${i+1}</div>
+      <div class="stu-info"><div class="stu-name">${s.name}</div><div class="stu-sub">${s.cls}</div></div>
+      <span class="score-chip" style="background:#fee2e2;color:#c0392b;">${s.score}</span>
+    </div>`).join('');
+
+  // ── PREDICT TAB ───────────────────────────────────────
+  document.getElementById('kpi-predict').innerHTML = `
+    <div class="kpi good"><div class="kpi-label">Dự báo đạt TN</div><div class="kpi-val">${pct(cPass+Math.round(cWarn*0.25), total)}%</div><div class="kpi-sub">Ước tính lạc quan</div></div>
+    <div class="kpi danger"><div class="kpi-label">Nguy cơ cao rớt</div><div class="kpi-val">${cDanger}</div><div class="kpi-sub">Can thiệp ngay</div></div>
+    <div class="kpi warn"><div class="kpi-label">Cần bổ trợ</div><div class="kpi-val">${cWarn}</div><div class="kpi-sub">Có thể cải thiện</div></div>
+    <div class="kpi info"><div class="kpi-label">Confidence</div><div class="kpi-val">87%</div><div class="kpi-sub">Dựa trên phân phối điểm</div></div>
+  `;
+
+  const bottom20 = [...S].sort((a,b)=>a.score-b.score).slice(0,20);
+  document.getElementById('pred-list').innerHTML = bottom20.map(s=>{
+    const prob = passProb(s.score);
+    const col = prob<30?'#ef4444':prob<60?'#f59e0b':'#3b82f6';
+    return `<div class="pred-row">
+      <div style="flex:1;">${s.name} <span style="color:#888;font-size:11px;">${s.cls}</span></div>
+      <div class="pred-bar-wrap"><div class="pred-bar" style="width:${prob}%;background:${col};"></div></div>
+      <div style="width:38px;text-align:right;font-weight:700;font-size:13px;color:${col};">${prob}%</div>
+    </div>`;
+  }).join('');
+
+  mkChart('riskChart', {
+    type:'bar',
+    data:{ labels: classStats.map(c=>c.cls), datasets:[
+      { label:'Nguy cơ rớt TN (<3.5)', data: classStats.map(c=>c.danger), backgroundColor:'#ef4444', borderRadius:3 },
+      { label:'Cần theo dõi (3.5–5)', data: classStats.map(c=>c.warn), backgroundColor:'#fcd34d', borderRadius:3 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{stacked:true, ticks:{font:{size:10}}}, y:{stacked:true, beginAtZero:true, ticks:{stepSize:1}} } }
+  });
+
+  const intv = [...S].filter(s=>s.score<5).sort((a,b)=>a.score-b.score);
+  document.getElementById('intervention-tbody').innerHTML = intv.map((s,i)=>{
+    const prob = passProb(s.score);
+    const urgent = s.score < 3.5;
+    return `<tr>
+      <td>${i+1}</td><td>${s.name}</td><td>${s.cls}</td>
+      <td style="font-weight:700;color:${urgent?'#c0392b':'#b7770d'};">${s.score}</td>
+      <td>${prob}%</td>
+      <td>${urgent?tagHTML('danger','Khẩn cấp'):tagHTML('warn','Ưu tiên')}</td>
+    </tr>`;
+  }).join('');
+
+  // Raw data
+  renderRawTable();
+}
+
+function populateSelect(id, classes) {
+  const el = document.getElementById(id);
+  while(el.options.length > 1) el.remove(1);
+  classes.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; el.appendChild(o); });
+}
+
+function filterStudents() {
+  const q   = document.getElementById('stu-search').value.toLowerCase().trim();
+  const cls = document.getElementById('stu-cls').value;
+  const lvl = document.getElementById('stu-level').value;
+  activeStudents = STUDENTS.filter(s => {
+    const nm = s.name.toLowerCase().includes(q) || s.cls.toLowerCase().includes(q) || String(s.stt).includes(q);
+    const mc = !cls || s.cls === cls;
+    const ml = !lvl || getLevel(s.score).key === lvl;
+    return nm && mc && ml;
+  });
+  renderStudentTable();
+}
+
+function renderStudentTable() {
+  document.getElementById('stu-count').textContent = activeStudents.length + ' học sinh';
+  document.getElementById('stu-tbody').innerHTML = activeStudents.map((s,i)=>{
+    const lv = getLevel(s.score);
+    const warn = s.score<3.5 ? tagHTML('danger','Khẩn') : s.score<5 ? tagHTML('warn','Theo dõi') : '';
+    return `<tr><td>${i+1}</td><td>${s.stt}</td><td>${s.name}</td><td>${s.cls}</td><td style="font-weight:700;">${s.score}</td><td>${tagHTML(lv.key,lv.label)}</td><td>${warn}</td></tr>`;
+  }).join('');
+}
+
+function filterRaw() {
+  const q   = document.getElementById('raw-search').value.toLowerCase().trim();
+  const cls = document.getElementById('raw-cls').value;
+  const filtered = STUDENTS.filter(s => (s.name.toLowerCase().includes(q)||s.cls.toLowerCase().includes(q)||String(s.stt).includes(q)) && (!cls||s.cls===cls));
+  document.getElementById('raw-count').textContent = filtered.length + ' học sinh';
+  document.getElementById('raw-tbody').innerHTML = filtered.map(s=>{
+    const lv = getLevel(s.score);
+    const warn = s.score<3.5 ? tagHTML('danger','Khẩn') : s.score<5 ? tagHTML('warn','Theo dõi') : '';
+    return `<tr><td>${s.stt}</td><td>${s.name}</td><td>${s.dob||'—'}</td><td>${s.cls}</td><td style="font-weight:700;">${s.score}</td><td>${tagHTML(lv.key,lv.label)}</td><td>${warn}</td></tr>`;
+  }).join('');
+}
+
+function renderRawTable() {
+  const cls = document.getElementById('raw-cls').value;
+  const filtered = STUDENTS.filter(s => !cls || s.cls === cls);
+  document.getElementById('raw-count').textContent = filtered.length + ' học sinh';
+  document.getElementById('raw-tbody').innerHTML = filtered.map(s => {
+    const lv = getLevel(s.score);
+    const warn = s.score < 3.5 ? tagHTML('danger', 'Khẩn') : s.score < 5 ? tagHTML('warn', 'Theo dõi') : '';
+    return `<tr><td>${s.stt}</td><td>${s.name}</td><td>${s.dob || '—'}</td><td>${s.cls}</td><td style="font-weight:700;">${s.score}</td><td>${tagHTML(lv.key, lv.label)}</td><td>${warn}</td></tr>`;
+  }).join('');
+}
+
+// ─── TAB SWITCH ───────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const p = document.getElementById('panel-'+name);
+  if (p) p.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ─── EXPORT CSV ───────────────────────────────────────────
+function exportCSV() {
+  if (!STUDENTS.length) return;
+  const rows = [['STT','Họ và tên','Ngày sinh','Lớp','Điểm','Xếp loại','Cảnh báo']];
+  STUDENTS.forEach(s => {
+    const lv = getLevel(s.score);
+    const warn = s.score<3.5?'Khẩn cấp':s.score<5?'Theo dõi':'';
+    rows.push([s.stt, s.name, s.dob, s.cls, s.score, lv.label, warn]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `BangDiem_${FILE_META.filename.replace(/\.[^.]+$/,'')}_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+function exportIntervention() {
+  if (!STUDENTS.length) return;
+  const intv = STUDENTS.filter(s=>s.score<5).sort((a,b)=>a.score-b.score);
+  const rows = [['#','STT','Họ và tên','Lớp','Điểm','Xác suất đạt TN','Mức độ ưu tiên']];
+  intv.forEach((s,i) => {
+    rows.push([i+1, s.stt, s.name, s.cls, s.score, passProb(s.score)+'%', s.score<3.5?'KHẨN CẤP':'ƯU TIÊN']);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `CanThiep_${FILE_META.filename.replace(/\.[^.]+$/,'')}_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+// ─── TEMPLATE MODAL ──────────────────────────────────────
+const ALL_SUBJECTS = [
+  {id:'toan', label:'Toán'},      {id:'van', label:'Văn'},
+  {id:'anh', label:'Anh'},        {id:'ly', label:'Lý'},
+  {id:'hoa', label:'Hóa'},        {id:'sinh', label:'Sinh'},
+  {id:'su', label:'Sử'},          {id:'dia', label:'Địa'},
+  {id:'gdktpl', label:'GDKTPL'},  {id:'tin', label:'Tin'},
+  {id:'cntq', label:'CN'},        {id:'gdqp', label:'GDQP'},
+];
+let selectedSubjects = new Set(['toan','van','anh','ly','hoa','sinh']);
+let currentTplType = 'single';
+
+function openTemplateModal(type) {
+  currentTplType = type || 'single';
+  selectTplType(currentTplType);
+  // Build subject chips
+  const chipContainer = document.getElementById('tpl-subject-chips');
+  chipContainer.innerHTML = ALL_SUBJECTS.map(s =>
+    `<div class="tpl-subject-chip ${selectedSubjects.has(s.id)?'on':''}" data-id="${s.id}" onclick="toggleSubject(this,'${s.id}')">${s.label}</div>`
+  ).join('');
+  document.getElementById('tpl-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTemplateModal() {
+  document.getElementById('tpl-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function selectTplType(type) {
+  currentTplType = type;
+  ['single','multi','guide'].forEach(t => {
+    document.getElementById('tpl-card-'+t).classList.toggle('selected', t===type);
+    document.getElementById('tpl-config-'+t).style.display = t===type ? 'block' : 'none';
+  });
+}
+
+function toggleSubject(el, id) {
+  if (selectedSubjects.has(id)) { selectedSubjects.delete(id); el.classList.remove('on'); }
+  else { selectedSubjects.add(id); el.classList.add('on'); }
+}
+
+// ─── TEMPLATE GENERATOR ──────────────────────────────────
+function downloadTemplate() {
+  if (currentTplType === 'single') generateSingleTemplate();
+  else if (currentTplType === 'multi') generateMultiTemplate();
+  else generateGuideTemplate();
+  closeTemplateModal();
+}
+
+// Shared sample Vietnamese names + classes helper
+function makeSampleRows(count, classes, subjects) {
+  const sampleNames = [
+    'Nguyễn Văn An','Trần Thị Bình','Lê Hoàng Cường','Phạm Thị Dung','Hoàng Minh Đức',
+    'Vũ Thị Giang','Đặng Văn Hải','Bùi Thị Hoa','Đỗ Minh Hùng','Ngô Thị Hương',
+    'Phan Văn Khoa','Lý Thị Lan','Trương Minh Long','Đinh Thị Mai','Lâm Văn Nam',
+    'Ninh Thị Ngọc','Cao Văn Phong','Thái Thị Quỳnh','Vương Minh Sơn','Tạ Thị Thảo',
+  ];
+  const clsArr = classes.map(c=>c.trim()).filter(Boolean);
+  const rows = [];
+  for (let i = 0; i < count && i < sampleNames.length; i++) {
+    const cls = clsArr[i % clsArr.length] || '12C01';
+    const base = {
+      STT: i+1,
+      'Họ và tên': sampleNames[i],
+      'Ngày sinh': `${String(Math.floor(Math.random()*28)+1).padStart(2,'0')}/${String(Math.floor(Math.random()*12)+1).padStart(2,'0')}/2008`,
+      'Lớp': cls,
+    };
+    if (subjects) {
+      subjects.forEach(s => { base[s] = (Math.random()*5+5).toFixed(1)*1; });
+    } else {
+      base['Điểm'] = (Math.random()*5+5).toFixed(1)*1;
+    }
+    rows.push(base);
+  }
+  return rows;
+}
+
+function applyHeaderStyle(ws, headerRow, colCount) {
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const addr = XLSX.utils.encode_cell({r: headerRow, c});
+    if (!ws[addr]) continue;
+    ws[addr].s = {
+      fill: { fgColor: { rgb: '1D6FBF' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: { bottom: { style: 'thin', color: { rgb: 'AAAAAA' } } }
+    };
+  }
+}
+
+function generateSingleTemplate() {
+  const subject   = document.getElementById('tpl-subject-name').value || 'Môn học';
+  const examName  = document.getElementById('tpl-exam-name').value || 'Lần thi';
+  const year      = document.getElementById('tpl-school-year').value || '2025-2026';
+  const nSample   = parseInt(document.getElementById('tpl-sample-count').value) || 0;
+  const clsInput  = document.getElementById('tpl-classes').value || '12C01';
+  const classes   = clsInput.split(',').map(c=>c.trim()).filter(Boolean);
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: Bảng điểm ──
+  const headerInfo = [
+    [`BẢNG ĐIỂM MÔN ${subject.toUpperCase()} — ${examName.toUpperCase()} — NĂM HỌC ${year}`],
+    [`Môn: ${subject}`, '', `Kỳ thi: ${examName}`, '', `Năm học: ${year}`],
+    [],
+    ['STT', 'Họ và tên', 'Ngày sinh', 'Lớp', 'Điểm', 'Ghi chú'],
+  ];
+
+  const sampleData = nSample > 0 ? makeSampleRows(nSample, classes, null) : [];
+  const dataRows = sampleData.map(r => [r.STT, r['Họ và tên'], r['Ngày sinh'], r['Lớp'], r['Điểm'], '']);
+
+  const allRows = [...headerInfo, ...dataRows];
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:6}, {wch:28}, {wch:14}, {wch:10}, {wch:8}, {wch:20}
+  ];
+
+  // Merge title
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:5} },
+    { s:{r:2,c:0}, e:{r:2,c:5} },
+  ];
+
+  // Freeze top 4 rows (header area)
+  ws['!freeze'] = { xSplit: 0, ySplit: 4 };
+
+  // Style title cell
+  if (ws['A1']) ws['A1'].s = { font:{bold:true, sz:13, color:{rgb:'1D6FBF'}}, alignment:{horizontal:'center'} };
+
+  // Style column header row (row index 3 = 4th row)
+  applyHeaderStyle(ws, 3, 6);
+
+  // Highlight "Điểm" column (col E, index 4) in sample data rows yellow
+  for (let r = 4; r < 4+nSample; r++) {
+    const addr = XLSX.utils.encode_cell({r, c:4});
+    if (!ws[addr]) continue;
+    ws[addr].s = { fill:{fgColor:{rgb:'FFF3CD'}}, font:{bold:true} };
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Bảng Điểm');
+
+  // ── Sheet 2: Hướng dẫn ──
+  const wsGuide = XLSX.utils.aoa_to_sheet([
+    ['HƯỚNG DẪN NHẬP LIỆU'],
+    [],
+    ['CỘT', 'MÔ TẢ', 'VÍ DỤ', 'BẮT BUỘC'],
+    ['STT', 'Số thứ tự học sinh', '1, 2, 3...', 'Không'],
+    ['Họ và tên', 'Họ tên đầy đủ của học sinh', 'Nguyễn Văn An', 'CÓ'],
+    ['Ngày sinh', 'Định dạng DD/MM/YYYY', '15/08/2008', 'Không'],
+    ['Lớp', 'Mã lớp theo quy định trường', '12C01, 11A2', 'CÓ'],
+    ['Điểm', 'Điểm thi, thang 10, chấp nhận số thập phân', '7.5, 8.25, 6.0', 'CÓ'],
+    ['Ghi chú', 'Ghi chú thêm nếu có', 'Vắng thi, Miễn...', 'Không'],
+    [],
+    ['LƯU Ý QUAN TRỌNG'],
+    ['• Không xóa hoặc thay đổi tên cột tiêu đề (hàng 4)'],
+    ['• Điểm nhập theo thang 10, dùng dấu chấm (.) cho số thập phân'],
+    ['• Mỗi học sinh một dòng, không gộp ô trong vùng dữ liệu'],
+    ['• Lưu file dạng .xlsx trước khi upload lên Dashboard'],
+    ['• Có thể nhập dữ liệu nhiều lớp trong cùng một file'],
+    [],
+    ['QUY TRÌNH SỬ DỤNG'],
+    ['Bước 1: Điền dữ liệu vào sheet "Bảng Điểm" từ hàng 5 trở xuống'],
+    ['Bước 2: Lưu file Excel (.xlsx)'],
+    ['Bước 3: Mở Dashboard → bấm "Chọn File" hoặc kéo thả file vào'],
+    ['Bước 4: Dashboard tự động phân tích và hiển thị kết quả'],
+  ]);
+  wsGuide['!cols'] = [{wch:18},{wch:38},{wch:22},{wch:12}];
+  if (wsGuide['A1']) wsGuide['A1'].s = { font:{bold:true, sz:13, color:{rgb:'1D6FBF'}} };
+  XLSX.utils.book_append_sheet(wb, wsGuide, 'Hướng Dẫn');
+
+  XLSX.writeFile(wb, `MAU_BANG_DIEM_${subject.replace(/\s/g,'_')}_${examName.replace(/\s/g,'_')}.xlsx`);
+}
+
+function generateMultiTemplate() {
+  const year        = document.getElementById('tpl-school-year-multi').value || '2025-2026';
+  const nSample     = parseInt(document.getElementById('tpl-sample-count-multi').value) || 0;
+  const clsInput    = document.getElementById('tpl-classes-multi').value || '12C01';
+  const classes     = clsInput.split(',').map(c=>c.trim()).filter(Boolean);
+  const subjectList = ALL_SUBJECTS.filter(s => selectedSubjects.has(s.id)).map(s=>s.label);
+  if (subjectList.length === 0) { alert('Vui lòng chọn ít nhất 1 môn học.'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: Bảng tổng hợp ──
+  const titleRow   = [`BẢNG ĐIỂM TỔNG HỢP — NĂM HỌC ${year}`];
+  const emptyRow   = [];
+  const headerRow  = ['STT', 'Họ và tên', 'Ngày sinh', 'Lớp', ...subjectList, 'Điểm TB', 'Xếp loại', 'Ghi chú'];
+  const allRows    = [titleRow, emptyRow, headerRow];
+  const sampleRows = nSample > 0 ? makeSampleRows(nSample, classes, subjectList) : [];
+  sampleRows.forEach(r => {
+    const scores = subjectList.map(s => r[s]);
+    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(2)*1 : '';
+    const xepLoai = avg>=8?'Giỏi':avg>=6.5?'Khá':avg>=5?'Trung bình':avg>=3.5?'Yếu':'Kém';
+    allRows.push([r.STT, r['Họ và tên'], r['Ngày sinh'], r['Lớp'], ...scores, avg, xepLoai, '']);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+  const totalCols = 4 + subjectList.length + 3;
+  ws['!cols'] = [
+    {wch:5}, {wch:28}, {wch:12}, {wch:8},
+    ...subjectList.map(()=>({wch:7})),
+    {wch:8}, {wch:10}, {wch:16}
+  ];
+  ws['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:totalCols-1} }];
+  ws['!freeze'] = { xSplit: 4, ySplit: 3 };
+  if (ws['A1']) ws['A1'].s = { font:{bold:true, sz:13, color:{rgb:'1D6FBF'}}, alignment:{horizontal:'center'} };
+  applyHeaderStyle(ws, 2, totalCols);
+
+  // Highlight score columns
+  for (let r = 3; r < 3+nSample; r++) {
+    for (let c = 4; c < 4+subjectList.length; c++) {
+      const addr = XLSX.utils.encode_cell({r, c});
+      if (!ws[addr]) continue;
+      ws[addr].s = { fill:{fgColor:{rgb:'FFF3CD'}}, font:{bold:true} };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Bảng Điểm Tổng Hợp');
+
+  // ── Sheet per class (blank) ──
+  classes.forEach(cls => {
+    const wsCls = XLSX.utils.aoa_to_sheet([
+      [`BẢNG ĐIỂM LỚP ${cls} — NĂM HỌC ${year}`],
+      [],
+      ['STT', 'Họ và tên', 'Ngày sinh', ...subjectList, 'Điểm TB', 'Ghi chú'],
+    ]);
+    wsCls['!cols'] = [{wch:5},{wch:28},{wch:12},...subjectList.map(()=>({wch:7})),{wch:8},{wch:16}];
+    applyHeaderStyle(wsCls, 2, 3+subjectList.length+2);
+    XLSX.utils.book_append_sheet(wb, wsCls, `Lớp ${cls}`);
+  });
+
+  // ── Guide sheet ──
+  const wsG = XLSX.utils.aoa_to_sheet([
+    ['HƯỚNG DẪN — BẢNG ĐIỂM NHIỀU MÔN'],
+    [],
+    ['• Nhập điểm từng môn vào các cột tương ứng (ô màu vàng)'],
+    ['• Cột Điểm TB sẽ được tính tự động khi upload'],
+    ['• Có thể nhập dữ liệu ở sheet tổng hợp hoặc từng sheet lớp riêng'],
+    ['• Điểm thang 10, dùng dấu chấm (.) cho số thập phân: 7.5, 8.25'],
+    ['• Lưu file .xlsx → Upload lên Dashboard → Phân tích tự động'],
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsG, 'Hướng Dẫn');
+
+  XLSX.writeFile(wb, `MAU_BANG_DIEM_TONG_HOP_${year.replace('-','_')}.xlsx`);
+}
+
+function generateGuideTemplate() {
+  const schoolName = document.getElementById('tpl-school-name').value || 'Trường THPT';
+  const year       = document.getElementById('tpl-school-year-guide').value || '2025-2026';
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: Mẫu đầy đủ có hướng dẫn inline ──
+  const rows = [
+    [`${schoolName.toUpperCase()} — BẢNG ĐIỂM THI — NĂM HỌC ${year}`],
+    [`Lưu ý: Chỉ nhập dữ liệu vào các ô màu vàng. Không chỉnh sửa tiêu đề.`],
+    [],
+    ['STT','Họ và tên ★','Ngày sinh','Lớp ★','Điểm ★','Ghi chú'],
+    ['(số)','(họ tên đầy đủ)','(DD/MM/YYYY)','(vd: 12C01)','(0.0 – 10.0)','(tùy chọn)'],
+    [],
+    ...makeSampleRows(10, ['12C01','12C02','12C03'], null).map(r=>[r.STT, r['Họ và tên'], r['Ngày sinh'], r['Lớp'], r['Điểm'], '']),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:5},{wch:28},{wch:14},{wch:10},{wch:9},{wch:20}];
+  ws['!merges'] = [
+    {s:{r:0,c:0},e:{r:0,c:5}},
+    {s:{r:1,c:0},e:{r:1,c:5}},
+    {s:{r:2,c:0},e:{r:2,c:5}},
+  ];
+  ws['!freeze'] = {xSplit:0,ySplit:5};
+  if (ws['A1']) ws['A1'].s = {font:{bold:true,sz:14,color:{rgb:'1D6FBF'}},alignment:{horizontal:'center'}};
+  if (ws['A2']) ws['A2'].s = {fill:{fgColor:{rgb:'FFF3CD'}},font:{italic:true,sz:10},alignment:{horizontal:'center'}};
+  // Style header
+  applyHeaderStyle(ws, 3, 6);
+  // Style hint row
+  for (let c=0;c<6;c++) {
+    const addr=XLSX.utils.encode_cell({r:4,c});
+    if(ws[addr]) ws[addr].s={font:{italic:true,sz:9,color:{rgb:'888888'}},fill:{fgColor:{rgb:'F5F5F5'}}};
+  }
+  // Yellow data cells
+  for (let r=6;r<16;r++){
+    [1,3,4].forEach(c=>{
+      const addr=XLSX.utils.encode_cell({r,c});
+      if(ws[addr]) ws[addr].s={fill:{fgColor:{rgb:'FFF8DC'}}};
+    });
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'Bảng Điểm Mẫu');
+
+  // ── Sheet 2: Quy tắc & ký hiệu ──
+  const wsR = XLSX.utils.aoa_to_sheet([
+    ['QUY TẮC NHẬP LIỆU & KÝ HIỆU XẾP LOẠI'],
+    [],
+    ['PHÂN LOẠI HỌC LỰC (theo thang điểm 10)'],
+    ['Xếp loại','Khoảng điểm','Màu cảnh báo trong Dashboard'],
+    ['Giỏi','≥ 8.0','Tím — Xuất sắc'],
+    ['Khá','6.5 – 7.9','Xanh dương — Tốt'],
+    ['Trung bình','5.0 – 6.4','Xám — Đạt yêu cầu'],
+    ['Dưới TB / Yếu','3.5 – 4.9','Vàng cam — Cần theo dõi'],
+    ['Nguy cơ rớt TN','< 3.5','Đỏ — Khẩn cấp, cần can thiệp'],
+    ['Điểm liệt','< 1.0','Đỏ đậm — Xử lý ngay'],
+    [],
+    ['QUY TẮC NHẬP LIỆU'],
+    ['Quy tắc','Chi tiết'],
+    ['Dấu thập phân','Dùng dấu CHẤM (.) — ví dụ: 7.5, không dùng 7,5'],
+    ['Điểm trống','Để trống ô nếu học sinh vắng thi, không nhập 0'],
+    ['Tên lớp','Dùng ký hiệu thống nhất toàn file — ví dụ: 12C01'],
+    ['Họ tên','Viết đủ họ tên, không dùng tắt hoặc nick name'],
+    ['Ngày sinh','Định dạng DD/MM/YYYY — ví dụ: 15/08/2008'],
+    [],
+    ['ĐỊNH DẠNG FILE HỢP LỆ'],
+    ['• .xlsx (Excel 2007 trở lên) — Khuyến nghị'],
+    ['• .xls (Excel 97-2003)'],
+    ['• .csv (Comma Separated Values)'],
+    [],
+    ['MẸO SỬ DỤNG'],
+    ['• Có thể nhập dữ liệu nhiều lớp trong cùng 1 sheet'],
+    ['• Dashboard tự nhận diện cột dù không đúng thứ tự'],
+    ['• Có thể thêm cột phụ — Dashboard chỉ đọc cột quan trọng'],
+    ['• Sau khi upload, dùng bộ lọc để xem từng lớp riêng'],
+  ]);
+  wsR['!cols'] = [{wch:20},{wch:30},{wch:35}];
+  XLSX.utils.book_append_sheet(wb, wsR, 'Quy Tắc & Ký Hiệu');
+
+  // ── Sheet 3: Ví dụ điền đúng / sai ──
+  const wsEx = XLSX.utils.aoa_to_sheet([
+    ['VÍ DỤ ĐIỀN ĐÚNG VÀ SAI'],
+    [],
+    ['STT','Họ và tên','Ngày sinh','Lớp','Điểm','Ghi chú','✅/❌'],
+    [1,'Nguyễn Văn An','15/08/2008','12C01',7.5,'','✅ Đúng'],
+    [2,'Trần Thị Bình','20/12/2007','12C02',8.25,'','✅ Đúng'],
+    [3,'Lê Văn C','01/01/2008','12c01',6.0,'','❌ Lớp chữ thường (nên là 12C01)'],
+    [4,'Phạm Thị D','1/1/2008','12C03','7,5','','❌ Điểm dùng dấu phẩy (nên là 7.5)'],
+    [5,'','','12C04',8.0,'','❌ Thiếu họ tên'],
+    [6,'Hoàng Minh E','15/03/2008','12C05',11,'','❌ Điểm > 10'],
+    [7,'Vũ Thị F','25/11/2008','12C01',0,'','❌ Nên để trống nếu vắng thi'],
+    [8,'Đặng Văn G','10/07/2008','12C02',5.5,'Vắng tiết 2','✅ Đúng — có ghi chú'],
+  ]);
+  wsEx['!cols'] = [{wch:5},{wch:22},{wch:12},{wch:8},{wch:8},{wch:22},{wch:38}];
+  applyHeaderStyle(wsEx, 2, 7);
+  XLSX.utils.book_append_sheet(wb, wsEx, 'Ví Dụ Đúng-Sai');
+
+  XLSX.writeFile(wb, `MAU_DAY_DU_${schoolName.replace(/\s/g,'_')}_${year.replace('-','_')}.xlsx`);
+}
+
+// ══════════════════════════════════════════════════════════
+// TREND MODULE
+// ══════════════════════════════════════════════════════════
+
+// Colours for up to 8 sessions (accessible palette)
+const SESS_COLORS = ['#1d6fbf','#1a7a4a','#c0392b','#b7770d','#6b3fa0','#0f6e56','#a32d2d','#854f0b'];
+
+// Auto-generate a short label from filename
+function autoSessionLabel(filename) {
+  const base = filename.replace(/\.[^.]+$/, '').replace(/_/g,' ');
+  // Try to extract "Lần N" or "HK N" or a date pattern
+  const m1 = base.match(/l[aầ]n\s*(\d+)/i);
+  if (m1) return 'Lần ' + m1[1];
+  const m2 = base.match(/hk\s*(\d+)/i);
+  if (m2) return 'HK ' + m2[1];
+  const m3 = base.match(/(\d{1,2})[_\-\/](\d{1,2})[_\-\/](\d{2,4})/);
+  if (m3) return m3[1]+'/'+m3[2];
+  // fallback: take last meaningful word chunk
+  const words = base.trim().split(/\s+/);
+  return words.slice(-2).join(' ').substring(0, 18);
+}
+
+// ── Render session shelf ────────────────────────────────
+function renderSessionShelf() {
+  const shelf = document.getElementById('session-shelf');
+  if (!shelf) return;
+  // Keep the add-button at end
+  const addBtn = document.getElementById('add-session-btn');
+  const fileInput = document.getElementById('trend-file-input');
+  shelf.innerHTML = '';
+
+  EXAM_SESSIONS.forEach((sess, i) => {
+    const prev = EXAM_SESSIONS[i-1];
+    const delta = prev ? (sess.meta.avg - prev.meta.avg) : null;
+    const deltaHTML = delta !== null
+      ? `<div class="sc-trend" style="color:${delta>=0?'var(--green)':'var(--red)'}">
+           ${delta>=0?'▲':'▼'} ${Math.abs(delta).toFixed(2)} so với ${prev.label}
+         </div>`
+      : '<div class="sc-sub">Kỳ đầu tiên</div>';
+
+    const card = document.createElement('div');
+    card.className = 'session-card' + (i === EXAM_SESSIONS.length-1 ? ' active-session' : '');
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <button class="sc-del" onclick="removeSession(${i},event)" title="Xoá kỳ này">✕</button>
+      <div class="sc-name" title="${sess.filename}">${sess.label}</div>
+      <div class="sc-meta">${sess.meta.count} HS · ${sess.meta.classes.length} lớp</div>
+      <div class="sc-avg">${sess.meta.avg.toFixed(2)}</div>
+      <div class="sc-sub">Điểm trung bình</div>
+      ${deltaHTML}
+    `;
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('sc-del')) return;
+    });
+    shelf.appendChild(card);
+  });
+
+  shelf.appendChild(addBtn);
+  addBtn.appendChild(fileInput);
+
+  // Trigger trend build
+  if (EXAM_SESSIONS.length >= 2) buildTrendDashboard();
+  else if (EXAM_SESSIONS.length === 1) {
+    document.getElementById('trend-content').style.display = 'none';
+    document.getElementById('trend-empty').style.display = 'block';
+  }
+}
+
+function removeSession(idx, e) {
+  e.stopPropagation();
+  EXAM_SESSIONS.splice(idx, 1);
+  renderSessionShelf();
+}
+
+// ── File upload for trend ───────────────────────────────
+function trendFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  if (typeof XLSX === 'undefined') { alert('Thư viện chưa sẵn sàng, vui lòng thử lại.'); return; }
+  showLoading('Đang đọc kỳ thi mới...', 20);
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    setProgress(50);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try {
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
+        setProgress(75);
+        parseTrendSession(rows, file.name);
+        hideLoading();
+      } catch(err) { hideLoading(); alert('Lỗi đọc file: ' + err.message); }
+    }));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseTrendSession(rows, filename) {
+  const SCORE_KEYS   = ['đtb','dtb','điểm tb','diem tb','điểm trung bình','diem trung binh','tb','score','điểm','diem','mark','point'];
+  const MULTI_SCORE_KEYS = ['toán','toan','văn','van','anh','lý','ly','hóa','hoa','sinh','sử','su','địa','dia','ktpl','gdcd','cn','tin'];
+  const NAME_KEYS    = ['họ tên','ho ten','họ và tên','ho va ten','name','tên','ten','hoten'];
+  const CLASS_KEYS   = ['lớp','lop','class','khối','khoi'];
+  const STT_KEYS     = ['stt','số thứ tự','so thu tu','#','no','tt'];
+  const DOB_KEYS     = ['ngày sinh','ngay sinh','dob','birth','sinh'];
+  function norm(v) { return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim(); }
+  function mKey(cell, keys) { const n=norm(cell); return keys.some(k=>n.includes(k)); }
+
+  let hRow=-1, colMap={};
+  for (let i=0;i<Math.min(rows.length,20);i++) {
+    const row=rows[i]; if(!row) continue;
+    const nonNull=row.filter(c=>c!==null&&c!==undefined&&String(c).trim()!==''&&String(c)!=='NaN');
+    if(nonNull.length<3) continue;
+    const map={}; let scoreColsFound=[];
+    row.forEach((cell,j)=>{
+      if(cell===null||cell===undefined||String(cell).trim()===''||String(cell)==='NaN') return;
+      if(map.name===undefined&&mKey(cell,NAME_KEYS)) map.name=j;
+      if(map.cls===undefined&&mKey(cell,CLASS_KEYS)) map.cls=j;
+      if(map.stt===undefined&&mKey(cell,STT_KEYS)) map.stt=j;
+      if(map.dob===undefined&&mKey(cell,DOB_KEYS)) map.dob=j;
+      if(mKey(cell,SCORE_KEYS)) scoreColsFound.push({col:j,label:String(cell)});
+      if(mKey(cell,MULTI_SCORE_KEYS)) scoreColsFound.push({col:j,label:String(cell)});
+    });
+    if(map.name===undefined) continue;
+    const dtb=scoreColsFound.filter(c=>mKey(c.label,SCORE_KEYS));
+    if(dtb.length>0){
+      const ex=dtb.filter(c=>['đtb','dtb','điểm tb','tb'].includes(norm(c.label)));
+      map.score=ex.length>0?ex[ex.length-1].col:dtb[dtb.length-1].col;
+    }
+    map.subjects=scoreColsFound.filter(c=>mKey(c.label,MULTI_SCORE_KEYS));
+    if(map.name!==undefined&&(map.score!==undefined||map.subjects.length>0)){hRow=i;colMap=map;break;}
+  }
+  if(hRow===-1){alert('Không nhận được cấu trúc từ file này.');return;}
+
+  const students=[];
+  for(let i=hRow+1;i<rows.length;i++){
+    const row=rows[i]; if(!row) continue;
+    const nonNull=row.filter(c=>c!==null&&c!==undefined&&String(c).trim()!==''&&String(c)!=='NaN');
+    if(nonNull.length<2) continue;
+    const rowStr=nonNull.map(c=>String(c).toLowerCase()).join(' ');
+    if(/tổng|trên 5|dưới 5|sĩ số|tỉ lệ|tren 5|duoi 5|si so|khối:|lớp:/.test(rowStr)) continue;
+    let name=colMap.name!==undefined?String(row[colMap.name]||'').replace(/\t/g,'').trim():'';
+    if(!name||!isNaN(parseFloat(name))||mKey(name,NAME_KEYS)||name==='NaN') continue;
+    let score=null;
+    if(colMap.score!==undefined){const v=row[colMap.score];if(v!==null&&v!==undefined&&String(v)!=='NaN'){const f=parseFloat(v);if(!isNaN(f)&&f>=0&&f<=10)score=f;}}
+    if(score===null&&colMap.subjects&&colMap.subjects.length>0){
+      const vals=colMap.subjects.map(s=>parseFloat(row[s.col])).filter(f=>!isNaN(f)&&f>=0&&f<=10);
+      if(vals.length>0) score=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*100)/100;
+    }
+    if(score===null) continue;
+    let cls=colMap.cls!==undefined?String(row[colMap.cls]||'').trim():'';
+    if(cls==='NaN'||cls==='null' || cls==='undefined') cls='';
+    if(!cls){for(const cell of row){if(!cell)continue;const m=String(cell).match(/\b(1[0-2][A-Za-z]\d{1,2})\b/);if(m){cls=m[1];break;}}}
+    students.push({name, cls:cls||'Chưa rõ', score:Math.round(score*10000)/10000});
+  }
+  if(students.length<2){alert(`File này chỉ có ${students.length} học sinh hợp lệ.`);return;}
+
+  const sessId='sess_'+Date.now();
+  const sessLabel=autoSessionLabel(filename);
+  EXAM_SESSIONS=EXAM_SESSIONS.filter(s=>s.filename!==filename);
+  EXAM_SESSIONS.push({
+    id:sessId, filename, name:sessLabel, label:sessLabel, students,
+    meta:{count:students.length, classes:[...new Set(students.map(s=>s.cls))].sort(),
+          avg:students.reduce((a,b)=>a+b.score,0)/students.length}
+  });
+  renderSessionShelf();
+}
+
+// ── BUILD TREND DASHBOARD ───────────────────────────────
+function buildTrendDashboard() {
+  const sessions = EXAM_SESSIONS;
+  const n = sessions.length;
+  const labels = sessions.map(s=>s.label);
+  const avgs   = sessions.map(s=>s.meta.avg);
+  const passes  = sessions.map(s=>{ const t=s.students.length; return Math.round(s.students.filter(x=>x.score>=5).length/t*100); });
+
+  document.getElementById('trend-empty').style.display = 'none';
+  document.getElementById('trend-content').style.display = 'block';
+
+  // ── KPIs ────────────────────────────────────────────
+  const first = sessions[0], last = sessions[n-1];
+  const deltaAvg = last.meta.avg - first.meta.avg;
+  const deltaPass = passes[n-1] - passes[0];
+  const firstPass = first.students.filter(s=>s.score>=5).length/first.students.length*100;
+  const lastPass  = last.students.filter(s=>s.score>=5).length/last.students.length*100;
+  const firstDanger = first.students.filter(s=>s.score<3.5).length;
+  const lastDanger  = last.students.filter(s=>s.score<3.5).length;
+
+  // Match students across all sessions (by name+class)
+  const allMatched = matchStudentsAcrossSessions(sessions);
+  const improved = allMatched.filter(r=>r.scores[n-1]!==null&&r.scores[0]!==null&&r.scores[n-1]>r.scores[0]).length;
+  const declined = allMatched.filter(r=>r.scores[n-1]!==null&&r.scores[0]!==null&&r.scores[n-1]<r.scores[0]).length;
+
+  document.getElementById('trend-kpi').innerHTML = `
+    <div class="trend-kpi ${deltaAvg>=0?'up':'down'}">
+      <div class="tk-label">Điểm TB thay đổi</div>
+      <div class="tk-val">${deltaAvg>=0?'+':''}${deltaAvg.toFixed(2)}</div>
+      <div class="tk-sub" style="color:var(--text3)">${first.label} → ${last.label}</div>
+    </div>
+    <div class="trend-kpi ${deltaPass>=0?'up':'down'}">
+      <div class="tk-label">Tỷ lệ đạt thay đổi</div>
+      <div class="tk-val">${deltaPass>=0?'+':''}${deltaPass}%</div>
+      <div class="tk-sub" style="color:var(--text3)">${Math.round(firstPass)}% → ${Math.round(lastPass)}%</div>
+    </div>
+    <div class="trend-kpi ${lastDanger<firstDanger?'up':'down'}">
+      <div class="tk-label">Nguy cơ rớt TN</div>
+      <div class="tk-val">${lastDanger<firstDanger?'▼':'▲'} ${Math.abs(lastDanger-firstDanger)}</div>
+      <div class="tk-sub" style="color:var(--text3)">${firstDanger} → ${lastDanger} học sinh</div>
+    </div>
+    <div class="trend-kpi up">
+      <div class="tk-label">Tiến bộ</div>
+      <div class="tk-val">${improved}</div>
+      <div class="tk-sub" style="color:var(--text3)">học sinh tăng điểm</div>
+    </div>
+    <div class="trend-kpi ${declined>improved?'down':'neutral'}">
+      <div class="tk-label">Sa sút</div>
+      <div class="tk-val">${declined}</div>
+      <div class="tk-sub" style="color:var(--text3)">học sinh giảm điểm</div>
+    </div>
+    <div class="trend-kpi neutral">
+      <div class="tk-label">Số kỳ thi</div>
+      <div class="tk-val">${n}</div>
+      <div class="tk-sub" style="color:var(--text3)">${sessions[0].label} → ${sessions[n-1].label}</div>
+    </div>
+  `;
+
+  // ── MAIN TREND CHART ────────────────────────────────
+  mkTChart('trendMainChart', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Điểm TB toàn trường',
+        data: avgs.map(v=>parseFloat(v.toFixed(2))),
+        borderColor: SESS_COLORS[0],
+        backgroundColor: SESS_COLORS[0]+'22',
+        tension: 0.35, fill: true, pointRadius: 6, pointHoverRadius: 8,
+        borderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`TB: ${ctx.parsed.y.toFixed(2)}`}} },
+      scales:{ y:{min:Math.max(0,Math.floor(Math.min(...avgs)-1)), max:Math.min(10,Math.ceil(Math.max(...avgs)+1)),
+        ticks:{font:{size:11}}, grid:{color:'rgba(0,0,0,.05)'} },
+        x:{ticks:{font:{size:11}}} }
+    }
+  });
+
+  // ── PER-CLASS TREND CHART ───────────────────────────
+  // Collect all classes across sessions
+  const allClasses = [...new Set(sessions.flatMap(s=>s.meta.classes))].sort();
+  const classDatasets = allClasses.slice(0,8).map((cls,ci) => ({
+    label: cls,
+    data: sessions.map(s=>{
+      const arr=s.students.filter(x=>x.cls===cls);
+      return arr.length ? parseFloat((arr.reduce((a,b)=>a+b.score,0)/arr.length).toFixed(2)) : null;
+    }),
+    borderColor: SESS_COLORS[ci%SESS_COLORS.length],
+    backgroundColor: SESS_COLORS[ci%SESS_COLORS.length],
+    tension:0.3, pointRadius:4, borderWidth:2, spanGaps:true
+  }));
+  mkTChart('trendClassChart', {
+    type:'line', data:{labels, datasets:classDatasets},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{font:{size:10}, boxWidth:10}}},
+      scales:{y:{min:Math.max(0,3), ticks:{font:{size:10}}}, x:{ticks:{font:{size:10}}}}}
+  });
+
+  // ── PASS RATE CHART ────────────────────────────────
+  mkTChart('trendPassChart', {
+    type:'bar',
+    data:{labels, datasets:[{
+      label:'Tỷ lệ đạt (%)',
+      data:passes,
+      backgroundColor:sessions.map((s,i)=>SESS_COLORS[i%SESS_COLORS.length]),
+      borderRadius:4
+    }]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // ── DISTRIBUTION SHIFT ────────────────────────────
+  const bucketLabels = ['<3.5','3.5–5','5–6.5','6.5–8','≥8'];
+  const buckFn = (studs) => [
+    studs.filter(s=>s.score<3.5).length,
+    studs.filter(s=>s.score>=3.5&&s.score<5).length,
+    studs.filter(s=>s.score>=5&&s.score<6.5).length,
+    studs.filter(s=>s.score>=6.5&&s.score<8).length,
+    studs.filter(s=>s.score>=8).length
+  ];
+  const distDatasets = sessions.map((sess,i)=>({
+    label: sess.label,
+    data: buckFn(sess.students),
+    backgroundColor: SESS_COLORS[i%SESS_COLORS.length]+(i===n-1?'ee':'66'),
+    borderColor: SESS_COLORS[i%SESS_COLORS.length],
+    borderWidth:1.5, borderRadius:3
+  }));
+  mkTChart('trendDistChart',{
+    type:'bar', data:{labels:bucketLabels, datasets:distDatasets},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},
+      scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10}}}}}
+  });
+
+  // ── STUDENT MOVEMENT TABLE ────────────────────────
+  const lastTwo0 = sessions[Math.max(0,n-2)], lastTwo1 = sessions[n-1];
+  const match2 = matchStudentsAcrossSessions([lastTwo0, lastTwo1]);
+  const withDelta = match2
+    .filter(r=>r.scores[0]!==null&&r.scores[1]!==null)
+    .map(r=>({...r, delta:r.scores[1]-r.scores[0]}))
+    .sort((a,b)=>b.delta-a.delta);
+
+  const topImprove = withDelta.slice(0,10);
+  const topDecline = [...withDelta].sort((a,b)=>a.delta-b.delta).slice(0,10);
+
+  const movRow = (r, prev, curr) => `
+    <tr>
+      <td>${r._rank||''}</td>
+      <td>${r.name}</td><td>${r.cls}</td>
+      <td>${prev.toFixed(2)}</td><td style="font-weight:700">${curr.toFixed(2)}</td>
+      <td><span class="mov-badge ${r.delta>0?'mov-up':r.delta<0?'mov-down':'mov-same'}">
+        ${r.delta>0?'+':''}${r.delta.toFixed(2)}
+      </span></td>
+    </tr>`;
+  document.getElementById('top-improve').innerHTML = topImprove.map((r,i)=>movRow({...r,_rank:i+1},r.scores[0],r.scores[1])).join('');
+  document.getElementById('top-decline').innerHTML = topDecline.map((r,i)=>movRow({...r,_rank:i+1},r.scores[0],r.scores[1])).join('');
+
+  // ── FULL MOVEMENT TABLE ────────────────────────────
+  movTableData = matchStudentsAcrossSessions(sessions).map(r=>{
+    const first=r.scores.find(x=>x!==null), last=[...r.scores].reverse().find(x=>x!==null);
+    return {...r, firstScore:first, lastScore:last, delta:last!==null&&first!==null?last-first:null};
+  });
+  buildMovTableHeader(sessions);
+  populateMovClsFilter();
+  filterMovTable();
+
+  // ── STUDENT TRACKER (RADAR LINE) ──────────────────
+  renderStuPicker(matchStudentsAcrossSessions(sessions));
+}
+
+// Match students across sessions by name (normalised) + cls
+function matchStudentsAcrossSessions(sessions) {
+  const n = sessions.length;
+  const allNames = new Map(); // key -> {name, cls, scores[]}
+  sessions.forEach((sess, si) => {
+    sess.students.forEach(stu => {
+      const key = normKey(stu.name) + '|' + stu.cls;
+      if (!allNames.has(key)) allNames.set(key, {name:stu.name, cls:stu.cls, scores:Array(n).fill(null)});
+      allNames.get(key).scores[si] = stu.score;
+    });
+  });
+  return [...allNames.values()];
+}
+function normKey(name) {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').trim();
+}
+
+function buildMovTableHeader(sessions) {
+  const thead = document.getElementById('mov-thead');
+  thead.innerHTML = '<tr><th>Học sinh</th><th>Lớp</th>' +
+    sessions.map(s=>`<th>${s.label}</th>`).join('') +
+    '<th>Thay đổi</th><th>Xu thế</th></tr>';
+}
+
+function populateMovClsFilter() {
+  const sel = document.getElementById('mov-cls');
+  while(sel.options.length>1) sel.remove(1);
+  const clses = [...new Set(movTableData.map(r=>r.cls))].sort();
+  clses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+}
+
+function filterMovTable() {
+  const q   = (document.getElementById('mov-search').value||'').toLowerCase();
+  const cls = document.getElementById('mov-cls').value;
+  const dir = document.getElementById('mov-dir').value;
+  const n   = EXAM_SESSIONS.length;
+  const filtered = movTableData.filter(r=>{
+    const mq = r.name.toLowerCase().includes(q)||r.cls.toLowerCase().includes(q);
+    const mc = !cls||r.cls===cls;
+    const md = !dir||( dir==='up'&&r.delta>0.05 )||( dir==='down'&&r.delta<-0.05 )||( dir==='same'&&Math.abs(r.delta||0)<=0.05 );
+    return mq&&mc&&md;
+  });
+  document.getElementById('mov-count').textContent = filtered.length + ' học sinh';
+  document.getElementById('mov-tbody').innerHTML = filtered.map(r=>{
+    const scoreCells = r.scores.map(s=>s!==null?`<td style="font-weight:500">${s.toFixed(2)}</td>`:'<td style="color:var(--text3)">—</td>').join('');
+    const d = r.delta;
+    const dHTML = d!==null ? `<span class="mov-badge ${d>0.05?'mov-up':d<-0.05?'mov-down':'mov-same'}">${d>0?'+':''}${d.toFixed(2)}</span>` : '—';
+    const trendHTML = r.scores.filter(x=>x!==null).length>=2 ? trendArrow(r.scores) : '—';
+    return `<tr><td>${r.name}</td><td>${r.cls}</td>${scoreCells}<td>${dHTML}</td><td>${trendHTML}</td></tr>`;
+  }).join('');
+}
+
+function trendArrow(scores) {
+  const valid = scores.filter(x=>x!==null);
+  if(valid.length<2) return '—';
+  const last=valid[valid.length-1], prev=valid[valid.length-2];
+  const d=last-prev;
+  if(d>0.5) return '<span style="color:var(--green);font-weight:700">▲▲</span>';
+  if(d>0.05) return '<span style="color:var(--green)">▲</span>';
+  if(d<-0.5) return '<span style="color:var(--red);font-weight:700">▼▼</span>';
+  if(d<-0.05) return '<span style="color:var(--red)">▼</span>';
+  return '<span style="color:var(--text3)">→</span>';
+}
+
+// ── Student individual tracker ─────────────────────────
+function renderStuPicker(allRows) {
+  const sortedRows = [...allRows]
+    .sort((a,b)=>b.scores.filter(x=>x!==null).length - a.scores.filter(x=>x!==null).length)
+    .slice(0,15);
+  const picker = document.getElementById('stu-picker');
+  picker.innerHTML = sortedRows.slice(0,6).map(r=>
+    `<div class="stu-chip ${TREND_SELECTED_STU.includes(r.name)?'sel':''}"
+       onclick="toggleStuTrack('${r.name.replace(/'/g,"\\'")}',this)">${r.name}</div>`
+  ).join('');
+  // Auto-select first 3
+  if(TREND_SELECTED_STU.length===0){
+    const auto=sortedRows.slice(0,3);
+    TREND_SELECTED_STU=auto.map(r=>r.name);
+    picker.querySelectorAll('.stu-chip').forEach((ch,i)=>{ if(i<3)ch.classList.add('sel'); });
+  }
+  drawStuChart(allRows);
+}
+
+function toggleStuTrack(name, el) {
+  if(TREND_SELECTED_STU.includes(name)){
+    TREND_SELECTED_STU=TREND_SELECTED_STU.filter(n=>n!==name);
+    el.classList.remove('sel');
+  } else {
+    if(TREND_SELECTED_STU.length>=5){alert('Chọn tối đa 5 học sinh.');return;}
+    TREND_SELECTED_STU.push(name); el.classList.add('sel');
+  }
+  drawStuChart(matchStudentsAcrossSessions(EXAM_SESSIONS));
+}
+
+function searchStudentTracker() {
+  const q=(document.getElementById('stu-tracker-search').value||'').toLowerCase();
+  const allRows=matchStudentsAcrossSessions(EXAM_SESSIONS);
+  const filtered=allRows.filter(r=>r.name.toLowerCase().includes(q)).slice(0,8);
+  const picker=document.getElementById('stu-picker');
+  picker.innerHTML=filtered.map(r=>
+    `<div class="stu-chip ${TREND_SELECTED_STU.includes(r.name)?'sel':''}"
+       onclick="toggleStuTrack('${r.name.replace(/'/g,"\\'")}',this)">${r.name}</div>`
+  ).join('');
+}
+
+// ── WORKSPACE SWITCHER ENGINE ────────────────────────────
+
+// Auto-detect khối từ tên file hoặc tên lớp
+function detectWorkspace(filename, students) {
+  const fn = filename.toLowerCase();
+  // Ưu tiên 1: tên file có "khoi10", "k10", "10", "lop10"...
+  if (/kh[oố]i?\s*10(?!\d)|k\.?10(?!\d)|lop10(?!\d)|grade.?10(?!\d)/i.test(fn)) return '10';
+  if (/kh[oố]i?\s*11(?!\d)|k\.?11(?!\d)|lop11(?!\d)|grade.?11(?!\d)/i.test(fn)) return '11';
+  if (/kh[oố]i?\s*12(?!\d)|k\.?12(?!\d)|lop12(?!\d)|grade.?12(?!\d)/i.test(fn)) return '12';
+  // Ưu tiên 2: phân tích lớp của học sinh (10C01 → khối 10)
+  if (students && students.length > 0) {
+    const clsCounts = {'10':0,'11':0,'12':0};
+    students.forEach(s => {
+      const m = s.cls.match(/^(10|11|12)/);
+      if (m) clsCounts[m[1]]++;
+    });
+    const dominant = Object.entries(clsCounts).sort((a,b)=>b[1]-a[1])[0];
+    if (dominant && dominant[1] > students.length * 0.5) return dominant[0];
+  }
+  // Ưu tiên 3: workspace hiện tại
+  return ACTIVE_WS;
+}
+
+// Switch sang workspace khác (lưu/restore toàn bộ UI)
+function switchWorkspace(wsId, btnEl) {
+  if (wsId === ACTIVE_WS) return;
+
+  // Hủy chart hiện tại (chúng thuộc về workspace cũ)
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+  charts = {};
+
+  ACTIVE_WS = wsId;
+
+  // Cập nhật tab active
+  document.querySelectorAll('.ws-tab').forEach(b => b.classList.remove('ws-active'));
+  if (btnEl) btnEl.classList.add('ws-active');
+
+  // Badge màu theo khối
+  const badge = document.getElementById('ws-badge');
+  if (badge) {
+    badge.textContent = WS_LABELS[wsId];
+    badge.style.background = WS_COLORS[wsId] + '22';
+    badge.style.color = WS_COLORS[wsId];
+    badge.style.borderColor = WS_COLORS[wsId] + '66';
+  }
+
+  const ws = WS[wsId];
+  if (ws.STUDENTS.length > 0) {
+    // Workspace này đã có dữ liệu → rebuild dashboard
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    renderSkeletons();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      buildDashboard();
+      renderSessionShelf();
+    }));
+  } else {
+    // Workspace chưa có dữ liệu → show upload screen với gợi ý khối
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('upload-screen').style.display = 'flex';
+    // Cập nhật tagline gợi ý
+    const tagline = document.querySelector('.upload-tagline');
+    if (tagline) tagline.textContent =
+      wsId === 'all'
+        ? 'Toàn trường — tổng hợp cả 3 khối'
+        : `Đang nhập dữ liệu ${WS_LABELS[wsId]} — kéo thả file Excel vào đây`;
+  }
+  updateWsBar();
+}
+
+// Cập nhật badge số học sinh và dot màu trên ws-bar
+function updateWsBar() {
+  WS_IDS.forEach(id => {
+    const countEl = document.getElementById('wscount-' + id);
+    const dotEl   = document.getElementById('wsdot-' + id);
+    if (!countEl || !dotEl) return;
+    const ws = WS[id];
+    const n = ws.STUDENTS.length;
+    countEl.textContent = n > 0 ? n : '0';
+    if (n > 0) {
+      dotEl.classList.add('has-data');
+      dotEl.style.background = WS_COLORS[id];
+    } else {
+      dotEl.classList.remove('has-data');
+      dotEl.style.background = '';
+    }
+  });
+
+  // Badge active
+  const badge = document.getElementById('ws-badge');
+  if (badge) {
+    badge.textContent = WS_LABELS[ACTIVE_WS];
+    badge.style.background = WS_COLORS[ACTIVE_WS] + '22';
+    badge.style.color = WS_COLORS[ACTIVE_WS];
+    badge.style.borderColor = WS_COLORS[ACTIVE_WS] + '66';
+  }
+}
+
+// "Toàn trường" workspace: merge tất cả WS có data
+function buildAllSchoolWorkspace() {
+  const allStudents = [];
+  const allSessions = [];
+  ['10','11','12'].forEach(k => {
+    const ws = WS[k];
+    if (ws.STUDENTS.length > 0) {
+      allStudents.push(...ws.STUDENTS);
+      allSessions.push(...ws.EXAM_SESSIONS.map(s => ({
+        ...s,
+        label: `[${k}] ${s.label}`,
+        name: `[${k}] ${s.name}`
+      })));
+    }
+  });
+  if (allStudents.length === 0) {
+    alert('Chưa có dữ liệu khối nào. Hãy upload file cho ít nhất 1 khối trước.');
+    return;
+  }
+  WS['all'].STUDENTS = allStudents;
+  WS['all'].FILE_META = {
+    filename: 'Toàn trường',
+    count: allStudents.length,
+    classes: [...new Set(allStudents.map(s=>s.cls))].sort(),
+    loadedAt: new Date().toLocaleString('vi-VN')
+  };
+  WS['all'].EXAM_SESSIONS = allSessions;
+}
+
+function viewAllSchool() {
+  buildAllSchoolWorkspace();
+  if (WS['all'].STUDENTS.length === 0) return;
+  ACTIVE_WS = 'all';
+  document.querySelectorAll('.ws-tab').forEach(b => b.classList.toggle('ws-active', b.dataset.ws==='all'));
+  Object.values(charts).forEach(c => { try{c.destroy();}catch(e){} });
+  charts = {};
+  renderSkeletons();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    buildDashboard(); renderSessionShelf();
+  }));
+  updateWsBar();
+}
+
+function drawStuChart(allRows) {
+  const labels=EXAM_SESSIONS.map(s=>s.label);
+  const datasets=TREND_SELECTED_STU.map((name,i)=>{
+    const row=allRows.find(r=>r.name===name);
+    return {
+      label:name,
+      data:row?row.scores.map(s=>s!==null?parseFloat(s.toFixed(2)):null):[],
+      borderColor:SESS_COLORS[i%SESS_COLORS.length],
+      backgroundColor:SESS_COLORS[i%SESS_COLORS.length],
+      tension:0.3, pointRadius:5, borderWidth:2, spanGaps:true
+    };
+  });
+  mkTChart('trendStuChart',{
+    type:'line', data:{labels, datasets},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10}}},
+      scales:{y:{min:0,max:10,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}}}
+  });
+}
+
+function mkTChart(id, cfg) {
+  if(charts[id]) { try{charts[id].destroy();}catch(e){} }
+  const el=document.getElementById(id);
+  if(el) charts[id]=new Chart(el,cfg);
+}
+
+// ─── INIT ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadHistory();
+  updateWsBar();
+
+  // Support drag on body
+  document.body.addEventListener('dragover', e => e.preventDefault());
+  document.body.addEventListener('drop', e => {
+    e.preventDefault();
+    if (document.getElementById('upload-screen').style.display !== 'none' ||
+        !document.getElementById('upload-screen').style.display) {
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    }
+  });
+});
+</script>
+</body>
+</html>
